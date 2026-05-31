@@ -1,0 +1,945 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Arquitectura — Elempleo AI Growth Engine</title>
+  <style>
+    :root {
+      --bg:        #0f1117;
+      --surface:   #1a1d27;
+      --surface2:  #22263a;
+      --border:    #2e3350;
+      --accent:    #4f6ef7;
+      --accent2:   #7c3aed;
+      --green:     #22c55e;
+      --yellow:    #eab308;
+      --red:       #ef4444;
+      --orange:    #f97316;
+      --teal:      #14b8a6;
+      --text:      #e2e8f0;
+      --muted:     #64748b;
+      --card-r:    12px;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.6;
+      padding: 32px 24px 80px;
+    }
+
+    /* ── Header ─────────────────────────────────────────────── */
+    .header {
+      text-align: center;
+      margin-bottom: 56px;
+    }
+    .header .badge {
+      display: inline-block;
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      color: white;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      padding: 4px 14px;
+      border-radius: 20px;
+      margin-bottom: 16px;
+    }
+    .header h1 {
+      font-size: 36px;
+      font-weight: 800;
+      background: linear-gradient(135deg, #e2e8f0 30%, var(--accent));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      margin-bottom: 12px;
+    }
+    .header p {
+      color: var(--muted);
+      font-size: 15px;
+      max-width: 600px;
+      margin: 0 auto;
+    }
+    .header .meta {
+      display: flex;
+      justify-content: center;
+      gap: 24px;
+      margin-top: 20px;
+    }
+    .header .meta span {
+      font-size: 12px;
+      color: var(--muted);
+    }
+    .header .meta strong { color: var(--text); }
+
+    /* ── Section titles ──────────────────────────────────────── */
+    .section-title {
+      font-size: 13px;
+      font-weight: 700;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 20px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .section-title::after {
+      content: '';
+      flex: 1;
+      height: 1px;
+      background: var(--border);
+    }
+
+    /* ── Grid ────────────────────────────────────────────────── */
+    .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 40px; }
+    .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; margin-bottom: 40px; }
+    .grid-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 40px; }
+    @media (max-width: 900px) {
+      .grid-2, .grid-3, .grid-4 { grid-template-columns: 1fr; }
+    }
+
+    /* ── Card ────────────────────────────────────────────────── */
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--card-r);
+      padding: 20px;
+    }
+    .card.accent-left { border-left: 3px solid var(--accent); }
+    .card.accent-green { border-left: 3px solid var(--green); }
+    .card.accent-yellow { border-left: 3px solid var(--yellow); }
+    .card.accent-orange { border-left: 3px solid var(--orange); }
+    .card.accent-teal { border-left: 3px solid var(--teal); }
+    .card.accent-purple { border-left: 3px solid var(--accent2); }
+    .card.accent-red { border-left: 3px solid var(--red); }
+
+    .card h3 {
+      font-size: 14px;
+      font-weight: 700;
+      color: var(--text);
+      margin-bottom: 6px;
+    }
+    .card .card-sub {
+      font-size: 11px;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+      margin-bottom: 12px;
+    }
+    .card p { font-size: 13px; color: #94a3b8; line-height: 1.7; }
+
+    /* ── Badges ──────────────────────────────────────────────── */
+    .badge-sm {
+      display: inline-block;
+      font-size: 10px;
+      font-weight: 700;
+      padding: 2px 8px;
+      border-radius: 4px;
+      letter-spacing: 0.5px;
+    }
+    .badge-done   { background: #14532d; color: #86efac; }
+    .badge-wip    { background: #1e3a5f; color: #93c5fd; }
+    .badge-next   { background: #3b1f6b; color: #c4b5fd; }
+    .badge-future { background: #292524; color: #a8a29e; }
+    .badge-free   { background: #14532d; color: #86efac; }
+    .badge-cost   { background: #1c1917; color: #a8a29e; }
+    .badge-haiku  { background: #1e3a5f; color: #7dd3fc; }
+    .badge-sonnet { background: #3b1f6b; color: #c4b5fd; }
+
+    /* ── Architecture diagram ────────────────────────────────── */
+    .arch-diagram {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--card-r);
+      padding: 32px;
+      margin-bottom: 40px;
+      font-family: 'JetBrains Mono', 'Fira Code', monospace;
+      font-size: 13px;
+    }
+    .arch-diagram .arch-row {
+      display: flex;
+      align-items: stretch;
+      gap: 16px;
+      margin-bottom: 8px;
+    }
+    .arch-box {
+      flex: 1;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 14px 16px;
+      text-align: center;
+    }
+    .arch-box.highlight { border-color: var(--accent); background: #1a2040; }
+    .arch-box.highlight-green { border-color: var(--green); background: #0f2a1a; }
+    .arch-box.highlight-purple { border-color: var(--accent2); background: #1e1040; }
+    .arch-box .box-title { font-weight: 700; font-size: 13px; margin-bottom: 4px; }
+    .arch-box .box-sub { font-size: 11px; color: var(--muted); }
+    .arch-connector {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--muted);
+      font-size: 18px;
+      min-width: 24px;
+    }
+    .arch-label {
+      font-size: 10px;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin: 16px 0 8px;
+      text-align: center;
+    }
+
+    /* ── Agent cards ─────────────────────────────────────────── */
+    .agent-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--card-r);
+      padding: 20px;
+      position: relative;
+    }
+    .agent-card .agent-num {
+      position: absolute;
+      top: -10px;
+      left: 16px;
+      width: 22px;
+      height: 22px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 11px;
+      font-weight: 800;
+      color: white;
+    }
+    .agent-card .agent-title {
+      font-size: 15px;
+      font-weight: 700;
+      margin-bottom: 4px;
+      margin-top: 6px;
+    }
+    .agent-card .agent-desc {
+      font-size: 12px;
+      color: #94a3b8;
+      margin-bottom: 14px;
+      line-height: 1.6;
+    }
+    .agent-card .agent-props {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-bottom: 12px;
+    }
+    .agent-card .prop {
+      font-size: 11px;
+      padding: 3px 8px;
+      border-radius: 4px;
+      background: var(--surface2);
+      color: #94a3b8;
+      border: 1px solid var(--border);
+    }
+    .prop.model-haiku { border-color: #1d4ed8; color: #93c5fd; }
+    .prop.model-sonnet { border-color: #7c3aed; color: #c4b5fd; }
+    .prop.status-done { border-color: #16a34a; color: #86efac; }
+    .prop.status-wip { border-color: #2563eb; color: #93c5fd; }
+    .prop.status-next { border-color: #7c3aed; color: #c4b5fd; }
+    .prop.status-pending { border-color: #57534e; color: #a8a29e; }
+
+    .agent-card .flow {
+      font-size: 11px;
+      color: #64748b;
+    }
+    .agent-card .flow .step {
+      padding: 3px 0;
+      padding-left: 12px;
+      border-left: 2px solid var(--border);
+      margin-left: 6px;
+      margin-bottom: 3px;
+    }
+    .agent-card .flow .step:last-child { border-color: transparent; }
+
+    /* ── Stack table ─────────────────────────────────────────── */
+    .stack-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-bottom: 40px;
+      font-size: 13px;
+    }
+    .stack-table th {
+      text-align: left;
+      padding: 10px 14px;
+      background: var(--surface2);
+      color: var(--muted);
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.8px;
+      text-transform: uppercase;
+      border-bottom: 1px solid var(--border);
+    }
+    .stack-table td {
+      padding: 12px 14px;
+      border-bottom: 1px solid var(--border);
+      color: #94a3b8;
+      vertical-align: top;
+    }
+    .stack-table tr:last-child td { border-bottom: none; }
+    .stack-table td:first-child { color: var(--text); font-weight: 600; }
+    .stack-table tr:hover td { background: var(--surface2); }
+
+    /* ── Roadmap ─────────────────────────────────────────────── */
+    .roadmap {
+      position: relative;
+      margin-bottom: 40px;
+    }
+    .roadmap-item {
+      display: flex;
+      gap: 20px;
+      margin-bottom: 4px;
+      position: relative;
+    }
+    .roadmap-left {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      width: 32px;
+      flex-shrink: 0;
+    }
+    .roadmap-dot {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 13px;
+      font-weight: 800;
+      flex-shrink: 0;
+      z-index: 1;
+    }
+    .roadmap-line {
+      width: 2px;
+      flex: 1;
+      min-height: 24px;
+      background: var(--border);
+      margin: 2px 0;
+    }
+    .roadmap-content {
+      flex: 1;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--card-r);
+      padding: 16px 20px;
+      margin-bottom: 16px;
+    }
+    .roadmap-content h4 { font-size: 14px; font-weight: 700; margin-bottom: 4px; }
+    .roadmap-content p { font-size: 12px; color: #94a3b8; line-height: 1.6; }
+    .roadmap-content .tags { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
+
+    /* ── Cost table ──────────────────────────────────────────── */
+    .cost-bar {
+      height: 6px;
+      border-radius: 3px;
+      background: linear-gradient(90deg, var(--accent), var(--accent2));
+      margin-top: 4px;
+    }
+
+    /* ── Footer ──────────────────────────────────────────────── */
+    .footer {
+      text-align: center;
+      margin-top: 60px;
+      padding-top: 32px;
+      border-top: 1px solid var(--border);
+      color: var(--muted);
+      font-size: 12px;
+    }
+    .footer strong { color: #94a3b8; }
+  </style>
+</head>
+<body>
+
+<!-- ════════════════════════════════════════════════════════
+     HEADER
+═══════════════════════════════════════════════════════════ -->
+<div class="header">
+  <div class="badge">elempleo.com · AI Growth Engine</div>
+  <h1>Arquitectura del Sistema Multi-Agente</h1>
+  <p>Ecosistema de agentes de IA para adquisición, activación y retención de candidatos sin equipo comercial.</p>
+  <div class="meta">
+    <span><strong>Stack:</strong> Python · Claude API · Supabase · Qdrant Cloud</span>
+    <span><strong>Costo base:</strong> $0/mes (free tiers)</span>
+    <span><strong>Actualizado:</strong> Mayo 2026</span>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════════════════════
+     1. ARQUITECTURA GENERAL
+═══════════════════════════════════════════════════════════ -->
+<div class="section-title">01 · Arquitectura General</div>
+
+<div class="arch-diagram">
+  <div class="arch-label">Mac M1 — Procesos Python locales (sin Docker)</div>
+
+  <div class="arch-row">
+    <div class="arch-box" style="border-color:#4f6ef7; background:#1a2040;">
+      <div class="box-title" style="color:#818cf8;">🤖 Agentes (Python)</div>
+      <div class="box-sub">JobMatch · EarlyActivation · ChurnPredictor · Reengagement · [+3 Fase 2]</div>
+    </div>
+  </div>
+
+  <div class="arch-row" style="justify-content:center; margin: 4px 0;">
+    <div style="color:#4f6ef7; font-size:20px;">↓ HTTP POST /v1/complete</div>
+  </div>
+
+  <div class="arch-row">
+    <div class="arch-box highlight">
+      <div class="box-title" style="color:#93c5fd;">⚡ LLM Gateway (FastAPI :8000)</div>
+      <div class="box-sub">Routing Haiku/Sonnet · Retries · Cost tracking</div>
+    </div>
+  </div>
+
+  <div class="arch-row" style="justify-content:center; gap:80px; margin: 4px 0;">
+    <div style="color:#4f6ef7; font-size:18px;">↓ asyncpg</div>
+    <div style="color:#7c3aed; font-size:18px;">↓ Anthropic SDK</div>
+  </div>
+
+  <div class="arch-row">
+    <div class="arch-box" style="border-color:#22c55e; background:#0f2a1a;">
+      <div class="box-title" style="color:#86efac;">🐘 Supabase</div>
+      <div class="box-sub">PostgreSQL · CDP · Events · Logs · Scheduling</div>
+    </div>
+    <div class="arch-box" style="border-color:#22c55e; background:#0f2a1a;">
+      <div class="box-title" style="color:#86efac;">🔷 Qdrant Cloud</div>
+      <div class="box-sub">Vector DB · elempleo_jobs · elempleo_users · AWS us-east-1</div>
+    </div>
+    <div class="arch-box" style="border-color:#7c3aed; background:#1e1040;">
+      <div class="box-title" style="color:#c4b5fd;">🧠 Claude API</div>
+      <div class="box-sub">Haiku (clasificación) · Sonnet (generación)</div>
+    </div>
+  </div>
+
+  <div class="arch-row" style="justify-content:center; margin: 4px 0;">
+    <div style="color:#64748b; font-size:18px;">↑ Local · sin API key</div>
+  </div>
+
+  <div class="arch-row">
+    <div class="arch-box" style="border-color:#14b8a6; background:#0f2020;">
+      <div class="box-title" style="color:#5eead4;">🔤 sentence-transformers</div>
+      <div class="box-sub">paraphrase-multilingual-MiniLM-L12-v2 · 384 dims · ~470MB · gratis</div>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════════════════════
+     2. INFRAESTRUCTURA / STACK
+═══════════════════════════════════════════════════════════ -->
+<div class="section-title">02 · Stack de Infraestructura</div>
+
+<table class="stack-table">
+  <thead>
+    <tr>
+      <th>Servicio</th>
+      <th>Rol</th>
+      <th>Proveedor</th>
+      <th>Costo</th>
+      <th>Estado</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>PostgreSQL (CDP)</td>
+      <td>Fuente de verdad. Tablas: users, jobs, events (append-only), agent_logs, onboarding_sequences, applications, referrals</td>
+      <td>Supabase Free — aws-1-us-east-2</td>
+      <td><span class="badge-sm badge-free">$0/mes</span></td>
+      <td>✅ Activo</td>
+    </tr>
+    <tr>
+      <td>Vector DB</td>
+      <td>Embeddings semánticos de vacantes y candidatos. Búsqueda por similitud coseno. 2 colecciones: elempleo_jobs, elempleo_users</td>
+      <td>Qdrant Cloud Free — AWS us-east-1</td>
+      <td><span class="badge-sm badge-free">$0/mes</span></td>
+      <td>✅ Activo</td>
+    </tr>
+    <tr>
+      <td>LLM Gateway</td>
+      <td>Proxy centralizado para Claude API. Routing automático Haiku/Sonnet según task_type. Retries + cost tracking en PostgreSQL</td>
+      <td>Python / FastAPI — proceso local :8000</td>
+      <td><span class="badge-sm badge-free">$0/mes</span></td>
+      <td>✅ Activo</td>
+    </tr>
+    <tr>
+      <td>Embeddings</td>
+      <td>Modelo multilingüe para encodear vacantes y queries. Soporta español colombiano. Sin API key.</td>
+      <td>sentence-transformers — local CPU</td>
+      <td><span class="badge-sm badge-free">$0/mes</span></td>
+      <td>✅ Activo</td>
+    </tr>
+    <tr>
+      <td>Event Bus</td>
+      <td>Eliminado. Reemplazado por polling sobre PostgreSQL. Stub no-op mantiene interfaz para imports.</td>
+      <td>—</td>
+      <td><span class="badge-sm badge-free">$0/mes</span></td>
+      <td>❌ Eliminado</td>
+    </tr>
+    <tr>
+      <td>Docker Desktop</td>
+      <td>Eliminado en migración a cloud. ~1.6GB RAM liberada en M1.</td>
+      <td>—</td>
+      <td><span class="badge-sm badge-free">$0/mes</span></td>
+      <td>❌ Eliminado</td>
+    </tr>
+    <tr>
+      <td>Claude API</td>
+      <td>Motor de IA para todos los agentes. Haiku: clasificación/extracción. Sonnet: generación/razonamiento.</td>
+      <td>Anthropic — pay per use</td>
+      <td><span class="badge-sm badge-cost">~$0.01–0.05 / run</span></td>
+      <td>✅ Activo</td>
+    </tr>
+  </tbody>
+</table>
+
+<!-- ════════════════════════════════════════════════════════
+     3. AGENTES — STACK POR AGENTE
+═══════════════════════════════════════════════════════════ -->
+<div class="section-title">03 · Stack por Agente</div>
+
+<!-- Fase 1 -->
+<p style="font-size:12px; color:var(--muted); margin-bottom:16px; text-transform:uppercase; letter-spacing:1px; font-weight:700;">Fase 1 — Completada ✅</p>
+<div class="grid-2" style="margin-bottom:12px;">
+
+  <!-- Job Match Agent -->
+  <div class="agent-card" style="border-left: 3px solid #4f6ef7;">
+    <div class="agent-num" style="background: #4f6ef7;">1</div>
+    <div class="agent-title">Job Match Agent</div>
+    <div class="agent-desc">Búsqueda semántica de vacantes + reranking personalizado con LLM. Punto de entrada para candidatos que buscan empleo.</div>
+    <div class="agent-props">
+      <span class="prop status-done">✅ Producción</span>
+      <span class="prop model-sonnet">Sonnet</span>
+      <span class="prop">Qdrant semantic search</span>
+      <span class="prop">~$0.023 / búsqueda</span>
+    </div>
+    <div class="flow">
+      <div class="step">Query del usuario → embeddings (MiniLM)</div>
+      <div class="step">Búsqueda vectorial en elempleo_jobs</div>
+      <div class="step">Reranking con Sonnet (score + razón)</div>
+      <div class="step">Retorna top-N vacantes con match_score</div>
+    </div>
+  </div>
+
+  <!-- Early Activation Agent -->
+  <div class="agent-card" style="border-left: 3px solid #22c55e;">
+    <div class="agent-num" style="background: #22c55e;">2</div>
+    <div class="agent-title">Early Activation Agent</div>
+    <div class="agent-desc">Secuencia de activación 72h para candidatos recién registrados. 5 pasos: bienvenida → tip CV → señal empleador → nudge aplicación → reactivación.</div>
+    <div class="agent-props">
+      <span class="prop status-done">✅ Producción</span>
+      <span class="prop model-sonnet">Sonnet</span>
+      <span class="prop">Scheduler 30s</span>
+      <span class="prop">~$0.050 / secuencia completa</span>
+    </div>
+    <div class="flow">
+      <div class="step">Trigger al registro del usuario</div>
+      <div class="step">Scheduler polling 30s (FOR UPDATE SKIP LOCKED)</div>
+      <div class="step">Genera mensaje personalizado por paso</div>
+      <div class="step">Envía por Email/WhatsApp/Log</div>
+    </div>
+  </div>
+</div>
+
+<!-- Fase 2 -->
+<p style="font-size:12px; color:var(--muted); margin-bottom:16px; margin-top:8px; text-transform:uppercase; letter-spacing:1px; font-weight:700;">Fase 2 — En construcción 🔨</p>
+<div class="grid-3">
+
+  <!-- Churn Predictor -->
+  <div class="agent-card" style="border-left: 3px solid #ef4444;">
+    <div class="agent-num" style="background: #ef4444;">3</div>
+    <div class="agent-title">Churn Predictor</div>
+    <div class="agent-desc">Clasifica el riesgo de abandono de usuarios inactivos antes de que se vayan.</div>
+    <div class="agent-props">
+      <span class="prop status-done">✅ Completado</span>
+      <span class="prop model-haiku">Haiku</span>
+      <span class="prop">Scheduler 1h</span>
+      <span class="prop">~$0.0004 / usuario</span>
+    </div>
+    <div class="flow">
+      <div class="step">Polling: inactivos > 7 días (CDP)</div>
+      <div class="step">Enriquecer con historial de eventos</div>
+      <div class="step">Haiku clasifica: HIGH/MEDIUM/LOW</div>
+      <div class="step">Escribe churn.risk_detected al CDP</div>
+    </div>
+  </div>
+
+  <!-- Re-engagement Agent -->
+  <div class="agent-card" style="border-left: 3px solid #f97316;">
+    <div class="agent-num" style="background: #f97316;">4</div>
+    <div class="agent-title">Re-engagement Agent</div>
+    <div class="agent-desc">Genera y envía mensajes personalizados de reactivación para usuarios HIGH/MEDIUM riesgo.</div>
+    <div class="agent-props">
+      <span class="prop status-done">✅ Completado</span>
+      <span class="prop model-sonnet">Sonnet</span>
+      <span class="prop">Scheduler 30min</span>
+      <span class="prop">~$0.010 / mensaje</span>
+    </div>
+    <div class="flow">
+      <div class="step">Lee eventos churn.risk_detected (HIGH/MEDIUM)</div>
+      <div class="step">Deduplicación: no repetir en 72h</div>
+      <div class="step">Sonnet genera mensaje personalizado</div>
+      <div class="step">Envía por canal + trackea en CDP</div>
+    </div>
+  </div>
+
+  <!-- Matching Notifier -->
+  <div class="agent-card" style="border-left: 3px solid #eab308;">
+    <div class="agent-num" style="background: #eab308; color:#000;">5</div>
+    <div class="agent-title">Matching Notifier</div>
+    <div class="agent-desc">Alerta proactiva a candidatos cuando aparece una vacante de alto match con su perfil.</div>
+    <div class="agent-props">
+      <span class="prop status-next">⏳ Próximo</span>
+      <span class="prop model-haiku">Haiku</span>
+      <span class="prop">Qdrant search</span>
+      <span class="prop">~$0.002 / alerta</span>
+    </div>
+    <div class="flow">
+      <div class="step">Nueva vacante publicada en Supabase</div>
+      <div class="step">Vector search: top candidatos por match</div>
+      <div class="step">Haiku personaliza el mensaje</div>
+      <div class="step">Notificación por canal preferido</div>
+    </div>
+  </div>
+
+  <!-- Profile Optimizer -->
+  <div class="agent-card" style="border-left: 3px solid #14b8a6;">
+    <div class="agent-num" style="background: #14b8a6; color:#000;">6</div>
+    <div class="agent-title">Profile Optimizer</div>
+    <div class="agent-desc">Sugiere mejoras al CV del candidato basadas en las vacantes más relevantes para su perfil.</div>
+    <div class="agent-props">
+      <span class="prop status-pending">📋 Pendiente</span>
+      <span class="prop model-sonnet">Sonnet</span>
+      <span class="prop">Qdrant + CDP</span>
+      <span class="prop">~$0.015 / optimización</span>
+    </div>
+    <div class="flow">
+      <div class="step">Candidatos con perfil &lt; 70% completitud</div>
+      <div class="step">Buscar vacantes relevantes en Qdrant</div>
+      <div class="step">Sonnet analiza gaps y genera tips</div>
+      <div class="step">Envía sugerencias personalizadas</div>
+    </div>
+  </div>
+
+  <!-- Employer Signal Agent -->
+  <div class="agent-card" style="border-left: 3px solid #7c3aed;">
+    <div class="agent-num" style="background: #7c3aed;">7</div>
+    <div class="agent-title">Employer Signal Agent</div>
+    <div class="agent-desc">Notifica al candidato cuando una empresa ve su perfil, generando un momento de motivación y urgencia.</div>
+    <div class="agent-props">
+      <span class="prop status-pending">📋 Pendiente</span>
+      <span class="prop model-haiku">Haiku</span>
+      <span class="prop">CDP events</span>
+      <span class="prop">~$0.001 / señal</span>
+    </div>
+    <div class="flow">
+      <div class="step">Evento: employer.viewed_profile en CDP</div>
+      <div class="step">Haiku genera mensaje de motivación</div>
+      <div class="step">Notifica al candidato en &lt; 1h</div>
+      <div class="step">Trackea employer.signal_notified</div>
+    </div>
+  </div>
+
+</div>
+
+<!-- ════════════════════════════════════════════════════════
+     4. FLUJO DE DATOS — CADENA DE AGENTES
+═══════════════════════════════════════════════════════════ -->
+<div class="section-title">04 · Cadena de Agentes — Flujo de Datos</div>
+
+<div class="card" style="margin-bottom:40px; padding:28px;">
+  <div style="display:flex; align-items:center; gap:12px; flex-wrap:wrap; justify-content:center;">
+
+    <div style="text-align:center; min-width:120px;">
+      <div style="background:#1a2040; border:1px solid #4f6ef7; border-radius:8px; padding:10px 14px; margin-bottom:6px;">
+        <div style="font-size:20px; margin-bottom:2px;">👤</div>
+        <div style="font-size:12px; font-weight:700; color:#818cf8;">Usuario registrado</div>
+      </div>
+      <div style="font-size:10px; color:var(--muted);">Evento: user.registered</div>
+    </div>
+
+    <div style="color:#4f6ef7; font-size:22px;">→</div>
+
+    <div style="text-align:center; min-width:120px;">
+      <div style="background:#0f2a1a; border:1px solid #22c55e; border-radius:8px; padding:10px 14px; margin-bottom:6px;">
+        <div style="font-size:20px; margin-bottom:2px;">🚀</div>
+        <div style="font-size:12px; font-weight:700; color:#86efac;">Early Activation</div>
+      </div>
+      <div style="font-size:10px; color:var(--muted);">72h onboarding</div>
+    </div>
+
+    <div style="color:#4f6ef7; font-size:22px;">→</div>
+
+    <div style="text-align:center; min-width:120px;">
+      <div style="background:#2a0f0f; border:1px solid #ef4444; border-radius:8px; padding:10px 14px; margin-bottom:6px;">
+        <div style="font-size:20px; margin-bottom:2px;">📊</div>
+        <div style="font-size:12px; font-weight:700; color:#fca5a5;">Churn Predictor</div>
+      </div>
+      <div style="font-size:10px; color:var(--muted);">Detección: cada hora</div>
+    </div>
+
+    <div style="color:#4f6ef7; font-size:22px;">→</div>
+
+    <div style="text-align:center; min-width:120px;">
+      <div style="background:#2a1a0f; border:1px solid #f97316; border-radius:8px; padding:10px 14px; margin-bottom:6px;">
+        <div style="font-size:20px; margin-bottom:2px;">📧</div>
+        <div style="font-size:12px; font-weight:700; color:#fdba74;">Re-engagement</div>
+      </div>
+      <div style="font-size:10px; color:var(--muted);">Reactivación: cada 30min</div>
+    </div>
+
+    <div style="color:#4f6ef7; font-size:22px;">→</div>
+
+    <div style="text-align:center; min-width:120px;">
+      <div style="background:#1a1a2a; border:1px solid #eab308; border-radius:8px; padding:10px 14px; margin-bottom:6px;">
+        <div style="font-size:20px; margin-bottom:2px;">🔔</div>
+        <div style="font-size:12px; font-weight:700; color:#fde047;">Match Notifier</div>
+      </div>
+      <div style="font-size:10px; color:var(--muted);">Alerta: nueva vacante</div>
+    </div>
+
+  </div>
+
+  <div style="margin-top:20px; padding-top:20px; border-top:1px solid var(--border);">
+    <div style="display:flex; gap:16px; font-size:11px; color:var(--muted); justify-content:center; flex-wrap:wrap;">
+      <span>📦 <strong style="color:#94a3b8;">CDP (events table)</strong> = cola de mensajes entre agentes</span>
+      <span>🔄 <strong style="color:#94a3b8;">Polling PostgreSQL</strong> = sin Redis, sin pub/sub</span>
+      <span>🔒 <strong style="color:#94a3b8;">Deduplicación</strong> = ventana de 72h por usuario</span>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════════════════════
+     5. MODELO DE COSTOS
+═══════════════════════════════════════════════════════════ -->
+<div class="section-title">05 · Modelo de Costos Claude API</div>
+
+<div class="grid-2" style="margin-bottom:16px;">
+  <div class="card accent-left">
+    <div class="card-sub">Haiku 4.5 · Clasificación y extracción</div>
+    <h3>$0.25 input · $1.25 output <span style="font-size:12px; color:var(--muted);">por 1M tokens</span></h3>
+    <p style="margin-top:8px;">Usado por: Churn Predictor, Matching Notifier, Employer Signal Agent. Ideal para tareas simples, rápidas y baratas.</p>
+    <div style="margin-top:12px; font-size:11px; color:var(--muted);">
+      Ejemplos: ~$0.0004/usuario (churn) · ~$0.001/alerta (employer)
+    </div>
+  </div>
+  <div class="card accent-purple">
+    <div class="card-sub">Sonnet 4.6 · Generación y razonamiento</div>
+    <h3>$3.00 input · $15.00 output <span style="font-size:12px; color:var(--muted);">por 1M tokens</span></h3>
+    <p style="margin-top:8px;">Usado por: Job Match Agent, Early Activation Agent, Re-engagement Agent. Para mensajes personalizados de alta calidad.</p>
+    <div style="margin-top:12px; font-size:11px; color:var(--muted);">
+      Ejemplos: ~$0.023/búsqueda (match) · ~$0.010/mensaje (reengagement)
+    </div>
+  </div>
+</div>
+
+<table class="stack-table" style="margin-bottom:40px;">
+  <thead>
+    <tr>
+      <th>Operación</th>
+      <th>Modelo</th>
+      <th>Tokens aprox.</th>
+      <th>Costo USD</th>
+      <th>Escala (100 usuarios/día)</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>Job Match (reranking 16 vacantes)</td>
+      <td><span class="badge-sm badge-sonnet">Sonnet</span></td>
+      <td>~3,150</td>
+      <td>$0.023</td>
+      <td>~$2.30/día</td>
+    </tr>
+    <tr>
+      <td>Early Activation (1 paso)</td>
+      <td><span class="badge-sm badge-sonnet">Sonnet</span></td>
+      <td>~1,130</td>
+      <td>$0.010</td>
+      <td>~$1.00/día</td>
+    </tr>
+    <tr>
+      <td>Secuencia 72h completa (5 pasos)</td>
+      <td><span class="badge-sm badge-sonnet">Sonnet</span></td>
+      <td>~5,500</td>
+      <td>$0.050</td>
+      <td>~$5.00/día</td>
+    </tr>
+    <tr>
+      <td>Churn Predictor (1 usuario)</td>
+      <td><span class="badge-sm badge-haiku">Haiku</span></td>
+      <td>~300</td>
+      <td>$0.0004</td>
+      <td>~$0.04/día</td>
+    </tr>
+    <tr>
+      <td>Re-engagement (1 mensaje)</td>
+      <td><span class="badge-sm badge-sonnet">Sonnet</span></td>
+      <td>~600</td>
+      <td>$0.010</td>
+      <td>~$0.50/día (5% churn)</td>
+    </tr>
+    <tr>
+      <td>Matching Notifier (1 alerta)</td>
+      <td><span class="badge-sm badge-haiku">Haiku</span></td>
+      <td>~200</td>
+      <td>$0.001</td>
+      <td>~$0.10/día</td>
+    </tr>
+  </tbody>
+</table>
+
+<!-- ════════════════════════════════════════════════════════
+     6. ROADMAP DE CONSTRUCCIÓN
+═══════════════════════════════════════════════════════════ -->
+<div class="section-title">06 · Roadmap de Construcción</div>
+
+<div class="roadmap">
+
+  <div class="roadmap-item">
+    <div class="roadmap-left">
+      <div class="roadmap-dot" style="background:#14532d; color:#86efac;">✓</div>
+      <div class="roadmap-line"></div>
+    </div>
+    <div class="roadmap-content" style="border-left: 3px solid #22c55e;">
+      <h4>Fase 0 — Infraestructura Base</h4>
+      <p>Stack completo: PostgreSQL (Supabase) + Qdrant Cloud + LLM Gateway FastAPI + sentence-transformers local. Sin Docker. 0 contenedores. ~1.6GB RAM liberada en M1. Schema CDP completo con 7 tablas.</p>
+      <div class="tags">
+        <span class="badge-sm badge-done">✅ Completado</span>
+        <span class="badge-sm" style="background:#1c1917; color:#a8a29e;">Supabase</span>
+        <span class="badge-sm" style="background:#1c1917; color:#a8a29e;">Qdrant Cloud</span>
+        <span class="badge-sm" style="background:#1c1917; color:#a8a29e;">FastAPI</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="roadmap-item">
+    <div class="roadmap-left">
+      <div class="roadmap-dot" style="background:#14532d; color:#86efac;">✓</div>
+      <div class="roadmap-line"></div>
+    </div>
+    <div class="roadmap-content" style="border-left: 3px solid #22c55e;">
+      <h4>Fase 1 — Agentes de Adquisición y Activación</h4>
+      <p>Job Match Agent (búsqueda semántica + reranking) y Early Activation Agent (secuencia 72h, 5 pasos, 66 tests). BaseAgent como clase base reutilizable para todos los agentes futuros.</p>
+      <div class="tags">
+        <span class="badge-sm badge-done">✅ Completado</span>
+        <span class="badge-sm" style="background:#1c1917; color:#a8a29e;">Job Match Agent</span>
+        <span class="badge-sm" style="background:#1c1917; color:#a8a29e;">Early Activation Agent</span>
+        <span class="badge-sm" style="background:#1c1917; color:#a8a29e;">66 tests</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="roadmap-item">
+    <div class="roadmap-left">
+      <div class="roadmap-dot" style="background:#1e3a5f; color:#93c5fd;">⟳</div>
+      <div class="roadmap-line"></div>
+    </div>
+    <div class="roadmap-content" style="border-left: 3px solid #4f6ef7;">
+      <h4>Fase 2A — Retención: Detección y Reactivación</h4>
+      <p>Churn Predictor (clasificación HIGH/MEDIUM/LOW, scheduler horario, 20 tests) y Re-engagement Agent (mensajes personalizados, deduplicación 72h, scheduler 30min, 18 tests). Cadena completa: detección → mensaje → tracking.</p>
+      <div class="tags">
+        <span class="badge-sm badge-wip">🔨 En curso</span>
+        <span class="badge-sm" style="background:#1c1917; color:#a8a29e;">Churn Predictor ✅</span>
+        <span class="badge-sm" style="background:#1c1917; color:#a8a29e;">Re-engagement Agent ✅</span>
+        <span class="badge-sm" style="background:#1c1917; color:#a8a29e;">38 tests</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="roadmap-item">
+    <div class="roadmap-left">
+      <div class="roadmap-dot" style="background:#3b1f6b; color:#c4b5fd;">3</div>
+      <div class="roadmap-line"></div>
+    </div>
+    <div class="roadmap-content" style="border-left: 3px solid #7c3aed;">
+      <h4>Fase 2B — Matching: Notificaciones Proactivas</h4>
+      <p>Matching Notifier: detecta nuevas vacantes de alto match y notifica candidatos antes de que busquen. Usa Qdrant para búsqueda inversa (vacante → candidatos). Haiku para personalización ligera.</p>
+      <div class="tags">
+        <span class="badge-sm badge-next">⏳ Siguiente</span>
+        <span class="badge-sm" style="background:#1c1917; color:#a8a29e;">Matching Notifier</span>
+        <span class="badge-sm" style="background:#1c1917; color:#a8a29e;">Qdrant inverse search</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="roadmap-item">
+    <div class="roadmap-left">
+      <div class="roadmap-dot" style="background:#292524; color:#a8a29e;">4</div>
+      <div class="roadmap-line"></div>
+    </div>
+    <div class="roadmap-content">
+      <h4>Fase 2C — Conversión: Optimización de Perfil</h4>
+      <p>Profile Optimizer: analiza el perfil del candidato contra vacantes relevantes e identifica gaps. Genera recomendaciones concretas de mejora. Dispara cuando completitud del perfil &lt; 70%.</p>
+      <div class="tags">
+        <span class="badge-sm badge-future">📋 Planificado</span>
+        <span class="badge-sm" style="background:#1c1917; color:#a8a29e;">Profile Optimizer</span>
+        <span class="badge-sm" style="background:#1c1917; color:#a8a29e;">Sonnet análisis</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="roadmap-item">
+    <div class="roadmap-left">
+      <div class="roadmap-dot" style="background:#292524; color:#a8a29e;">5</div>
+    </div>
+    <div class="roadmap-content">
+      <h4>Fase 2D — Señales: Employer Interest</h4>
+      <p>Employer Signal Agent: cuando una empresa ve el perfil de un candidato, lo notifica para crear urgencia y motivación. Requiere eventos de employer activity en el CDP (más complejo de implementar con datos reales).</p>
+      <div class="tags">
+        <span class="badge-sm badge-future">📋 Planificado</span>
+        <span class="badge-sm" style="background:#1c1917; color:#a8a29e;">Employer Signal Agent</span>
+        <span class="badge-sm" style="background:#1c1917; color:#a8a29e;">Requiere datos reales</span>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- ════════════════════════════════════════════════════════
+     7. ESTADO ACTUAL
+═══════════════════════════════════════════════════════════ -->
+<div class="section-title">07 · Estado Actual del Proyecto</div>
+
+<div class="grid-4" style="margin-bottom:40px;">
+  <div class="card accent-green">
+    <div class="card-sub">Agentes completados</div>
+    <h3 style="font-size:32px; font-weight:800; color:#22c55e;">4/7</h3>
+    <p>Job Match, Early Activation, Churn Predictor, Re-engagement</p>
+  </div>
+  <div class="card accent-left">
+    <div class="card-sub">Tests escritos</div>
+    <h3 style="font-size:32px; font-weight:800; color:#4f6ef7;">104</h3>
+    <p>66 Early Activation + 20 Churn + 18 Re-engagement</p>
+  </div>
+  <div class="card" style="border-left:3px solid #14b8a6;">
+    <div class="card-sub">Costo infraestructura</div>
+    <h3 style="font-size:32px; font-weight:800; color:#14b8a6;">$0</h3>
+    <p>Supabase free + Qdrant Cloud free + procesos Python locales</p>
+  </div>
+  <div class="card" style="border-left:3px solid #eab308;">
+    <div class="card-sub">RAM liberada en M1</div>
+    <h3 style="font-size:32px; font-weight:800; color:#eab308;">1.6 GB</h3>
+    <p>Eliminando Docker Desktop y 3 contenedores</p>
+  </div>
+</div>
+
+<!-- Footer -->
+<div class="footer">
+  <p><strong>Elempleo AI Growth Engine</strong> · Sistema multi-agente para adquisición y retención de candidatos</p>
+  <p style="margin-top:6px;">elempleo.com · Colombia · 2026 · Construido con Claude (Anthropic) + Python</p>
+</div>
+
+</body>
+</html>

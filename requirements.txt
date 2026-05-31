@@ -1,0 +1,26 @@
+# ── Core ──────────────────────────────────────────────────────────────────
+anthropic>=0.28.0
+fastapi>=0.111.0
+uvicorn[standard]>=0.30.0
+pydantic>=2.7.0
+pydantic-settings>=2.3.0
+python-dotenv>=1.0.0
+
+# ── Base de datos ──────────────────────────────────────────────────────────
+asyncpg>=0.29.0
+sqlalchemy[asyncio]>=2.0.30
+alembic>=1.13.0
+psycopg2-binary>=2.9.9
+
+# ── Vector DB ─────────────────────────────────────────────────────────────
+qdrant-client>=1.9.1
+sentence-transformers>=3.0.1   # embeddings gratis, sin API key, soporta español
+
+# ── HTTP ──────────────────────────────────────────────────────────────────
+httpx>=0.27.0
+
+# ── Utils ──────────────────────────────────────────────────────────────────
+tenacity>=8.3.0       # retries con backoff
+structlog>=24.2.0     # logging estructurado
+rich>=13.7.0          # output bonito en terminal
+typer>=0.12.0         # CLI para scripts

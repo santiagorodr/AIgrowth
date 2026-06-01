@@ -57,15 +57,29 @@ elempleo-ai-growth/
 │   │   ├── demo.py              # Demo CLI interactiva
 │   │   ├── models.py            # Pydantic models
 │   │   └── prompts.py           # System prompt + template de reranking
-│   └── early_activation/
-│       ├── agent.py             # EarlyActivationAgent — secuencia 72h
-│       ├── api.py               # Router FastAPI: trigger / status / step
-│       ├── channels.py          # Adaptadores Email, WhatsApp, LogChannel (fallback)
-│       ├── demo.py              # Demo CLI con --user N, --custom, --no-llm, --delay
-│       ├── models.py            # Pydantic models: SequenceStep, OnboardingSequence
-│       ├── prompts.py           # Prompts personalizados por paso de la secuencia
-│       ├── scheduler.py         # Async polling scheduler (asyncio, SELECT FOR UPDATE)
-│       └── sequences.py         # Definición de los 5 pasos: welcome→cv_tip→...→reactivation
+│   ├── early_activation/
+│   │   ├── agent.py             # EarlyActivationAgent — secuencia 72h
+│   │   ├── api.py               # Router FastAPI: trigger / status / step
+│   │   ├── channels.py          # Adaptadores Email, WhatsApp, LogChannel (fallback)
+│   │   ├── demo.py              # Demo CLI con --user N, --custom, --no-llm, --delay
+│   │   ├── models.py            # Pydantic models: SequenceStep, OnboardingSequence
+│   │   ├── prompts.py           # Prompts personalizados por paso de la secuencia
+│   │   ├── scheduler.py         # Async polling scheduler (asyncio, SELECT FOR UPDATE)
+│   │   └── sequences.py         # Definición de los 5 pasos: welcome→cv_tip→...→reactivation
+│   ├── churn_predictor/
+│   │   ├── agent.py             # ChurnPredictorAgent — clasifica riesgo HIGH/MEDIUM/LOW
+│   │   ├── api.py               # Router FastAPI
+│   │   ├── demo.py              # Demo CLI
+│   │   ├── models.py            # Pydantic models
+│   │   ├── prompts.py           # System prompts
+│   │   └── scheduler.py         # Polling horario sobre usuarios inactivos >7 días
+│   └── reengagement/
+│       ├── agent.py             # ReengagementAgent — mensajes personalizados de reactivación
+│       ├── api.py               # Router FastAPI
+│       ├── demo.py              # Demo CLI
+│       ├── models.py            # Pydantic models
+│       ├── prompts.py           # System prompts
+│       └── scheduler.py         # Polling 30min, deduplicación 72h
 ├── cdp/
 │   ├── events.py                # CDPClient + Events (catálogo de event_types) — SIN Redis
 │   └── schema.sql               # Schema PostgreSQL: users, jobs, events, agent_logs, sequences
@@ -115,6 +129,11 @@ make demo-activation-offline # Demo sin llamar a Claude (más rápido)
 # Verificación
 make verify-agent            # Tests Job Match Agent
 make verify-activation       # Tests Early Activation Agent
+make verify-churn            # Tests Churn Predictor
+make verify-reengagement     # Tests Re-engagement Agent
+
+# URL pública para pruebas (requiere Gateway corriendo)
+ngrok http 8000              # Genera URL pública temporal → /docs para explorar
 ```
 
 ---
@@ -210,9 +229,9 @@ El routing Haiku/Sonnet es automático en el LLM Gateway según `task_type`.
 
 | # | Agente | Estado |
 |---|---|---|
-| 1 | Churn Predictor | ⏳ Siguiente |
-| 2 | Re-engagement Agent | ⏳ Pendiente |
-| 3 | Matching Notifier | ⏳ Pendiente |
+| 1 | Churn Predictor | ✅ Completado |
+| 2 | Re-engagement Agent | ✅ Completado |
+| 3 | Matching Notifier | ⏳ Siguiente |
 | 4 | Profile Optimizer | ⏳ Pendiente |
 | 5 | Employer Signal Agent | ⏳ Pendiente |
 

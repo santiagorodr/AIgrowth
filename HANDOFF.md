@@ -1,8 +1,8 @@
 # HANDOFF — Elempleo AI Growth Engine
 > Para: Claude Code  
-> De: sesión de migración a cloud + inicio Fase 2  
-> Fecha: 2026-05-29  
-> Estado: Fase 1 completa y migrada a cloud. Listo para construir Fase 2.
+> De: sesión GitHub + ngrok + avance Fase 2  
+> Fecha: 2026-05-31  
+> Estado: Fase 1 completa. Fase 2A completa (Churn Predictor + Re-engagement). Próximo: Matching Notifier.
 
 ---
 
@@ -34,13 +34,13 @@ Stack 100% operativo en cloud. Verificado con `make test` — 4/4 servicios en v
 | Early Activation Agent | ✅ | Secuencia 72h, 5/5 pasos, 0 fallidos |
 | Docker Desktop | ✅ eliminado | ~1.6GB RAM liberada en el M1 |
 
-### ⏳ Fase 2 — EN CURSO (próxima tarea: Churn Predictor)
+### ✅ Fase 2A — COMPLETA (Churn Predictor + Re-engagement)
 
 | # | Agente | Estado | Depende de |
 |---|---|---|---|
-| 1 | **Churn Predictor** | ⏳ Siguiente | Nada — primer eslabón |
-| 2 | **Re-engagement Agent** | ⏳ Pendiente | Churn Predictor (#1) |
-| 3 | **Matching Notifier** | ⏳ Pendiente | Qdrant (ya listo) |
+| 1 | **Churn Predictor** | ✅ Completado | — |
+| 2 | **Re-engagement Agent** | ✅ Completado | Churn Predictor (#1) |
+| 3 | **Matching Notifier** | ⏳ Siguiente | Qdrant (ya listo) |
 | 4 | **Profile Optimizer** | ⏳ Pendiente | Qdrant (ya listo) |
 | 5 | **Employer Signal Agent** | ⏳ Pendiente | Datos de employer activity |
 
@@ -354,23 +354,35 @@ Events.AGENT_ERROR              # "agent.error"
 
 ---
 
+## Infraestructura adicional configurada (2026-05-31)
+
+| Herramienta | Propósito | Notas |
+|---|---|---|
+| GitHub | Control de versiones | [github.com/santiagorodr/AIgrowth](https://github.com/santiagorodr/AIgrowth) — privado |
+| ngrok | URL pública para pruebas | `ngrok http 8000` — URL temporal, cambia al reiniciar |
+| gh CLI | Autenticación GitHub | Token guardado en Keychain Mac, no expira |
+
+---
+
 ## Próxima sesión — por dónde empezar
 
-**Primer comando:** verificar que el stack sigue vivo:
+**Comandos de arranque (ejecutar en orden):**
+
 ```bash
+# Terminal 1 — verificar stack y levantar Gateway (queda bloqueada)
+cd ~/Documents/Claude/"Growth agents personas EE"/elempleo-ai-growth
 make test
+make gateway-dev
+
+# Terminal 2 — solo si necesitas URL pública para pruebas
+ngrok http 8000
 ```
 
-Si los 4 servicios están en verde → empezar con **Churn Predictor**.
+**Siguiente agente: Matching Notifier (#3)**
 
-### Por qué Churn Predictor primero
-1. Datos disponibles hoy: `users.last_active_at` + tabla `events`
-2. Clasificación → usa Haiku (~$0.0004 por usuario, muy barato)
-3. Alimenta directamente al Re-engagement Agent (#2)
-4. Alto impacto: retener un usuario en riesgo cuesta 10x menos que reactivarlo después
-
-### Qué hace el Churn Predictor
-- **Input:** perfil del usuario + historial de sus últimos eventos (CDP)
-- **Proceso:** Claude Haiku clasifica el nivel de riesgo (alto / medio / bajo) y la razón
-- **Output:** escribe evento `churn.risk_detected` en la tabla `events` con score y razón
-- **Schedule:** corre cada hora via polling sobre `users` (usuarios inactivos >7 días)
+### Qué hace el Matching Notifier
+- **Input:** nueva vacante publicada en Supabase
+- **Proceso:** búsqueda inversa en Qdrant (vacante → candidatos con alto match), Haiku personaliza el mensaje
+- **Output:** notificación al candidato por canal preferido + evento `match.notification_sent` en CDP
+- **Schedule:** polling sobre vacantes nuevas (publicadas en las últimas X horas)
+- **Costo estimado:** ~$0.001–0.002 por alerta (Haiku)

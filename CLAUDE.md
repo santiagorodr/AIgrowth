@@ -87,13 +87,20 @@ elempleo-ai-growth/
 │   │   ├── models.py            # Pydantic models
 │   │   ├── prompts.py           # System prompts (Haiku)
 │   │   └── scheduler.py         # Polling 6h sobre vacantes nuevas, dedup 72h
-│   └── profile_optimizer/
-│       ├── agent.py             # ProfileOptimizerAgent — gap analysis perfil vs vacantes
-│       ├── api.py               # Router FastAPI
-│       ├── demo.py              # Demo CLI
-│       ├── models.py            # Pydantic models (SuggestionPriority, ProfileSuggestion)
-│       ├── prompts.py           # System prompts (Sonnet)
-│       └── scheduler.py         # Polling diario sobre perfiles con completion < 70%
+│   ├── profile_optimizer/
+│   │   ├── agent.py             # ProfileOptimizerAgent — gap analysis perfil vs vacantes
+│   │   ├── api.py               # Router FastAPI
+│   │   ├── demo.py              # Demo CLI
+│   │   ├── models.py            # Pydantic models (SuggestionPriority, ProfileSuggestion)
+│   │   ├── prompts.py           # System prompts (Sonnet)
+│   │   └── scheduler.py         # Polling diario sobre perfiles con completion < 70%
+│   └── employer_signal/
+│       ├── agent.py             # EmployerSignalAgent — detecta visitas + notifica candidatos
+│       ├── api.py               # Router FastAPI: /process, /simulate, /notify/{user_id}
+│       ├── demo.py              # Demo CLI con simulador integrado
+│       ├── models.py            # Pydantic models (EmployerView, SignalResult)
+│       ├── prompts.py           # System prompts (Haiku — mensajes motivadores)
+│       └── scheduler.py         # Polling cada 15 min sobre eventos employer.viewed_profile
 ├── cdp/
 │   ├── events.py                # CDPClient + Events (catálogo de event_types) — SIN Redis
 │   └── schema.sql               # Schema PostgreSQL: users, jobs, events, agent_logs, sequences
@@ -114,7 +121,8 @@ elempleo-ai-growth/
 │   ├── verify_churn_predictor.py       # Tests del Churn Predictor (20 tests)
 │   ├── verify_reengagement.py          # Tests del Re-engagement Agent (18 tests)
 │   ├── verify_matching_notifier.py     # Tests del Matching Notifier (15 tests)
-│   └── verify_profile_optimizer.py     # Tests del Profile Optimizer (16 tests)
+│   ├── verify_profile_optimizer.py     # Tests del Profile Optimizer (16 tests)
+│   └── verify_employer_signal.py       # Tests del Employer Signal Agent (16 tests)
 ├── data/
 │   ├── mock_jobs.json           # 25 vacantes colombianas realistas
 │   └── mock_users.json          # 20 perfiles de candidatos
@@ -151,6 +159,7 @@ make verify-churn            # Tests Churn Predictor (20 tests)
 make verify-reengagement     # Tests Re-engagement Agent (18 tests)
 make verify-matching         # Tests Matching Notifier (15 tests)
 make verify-profile          # Tests Profile Optimizer (16 tests)
+make verify-employer         # Tests Employer Signal Agent (16 tests)
 
 # URL pública para pruebas (requiere Gateway corriendo)
 ngrok http 8000              # Genera URL pública temporal → /docs para explorar
@@ -248,15 +257,23 @@ El routing Haiku/Sonnet es automático en el LLM Gateway según `task_type`.
 | Event Bus (Redis) | ❌ eliminado | Reemplazado por polling sobre PostgreSQL |
 | Docker | ❌ eliminado | 0 contenedores, ~1.6GB RAM liberada |
 
-### Fase 2 — En curso (4/5 completos)
+### Fase 2 — COMPLETA ✅ (5/5)
 
-| # | Agente | Estado | Tests |
-|---|---|---|---|
-| 1 | Churn Predictor | ✅ Completado | 20/20 |
-| 2 | Re-engagement Agent | ✅ Completado | 18/18 |
-| 3 | Matching Notifier | ✅ Completado | 15/15 |
-| 4 | Profile Optimizer | ✅ Completado | 16/16 |
-| 5 | Employer Signal Agent | ⏳ Siguiente | — |
+| # | Agente | Estado | Tests | Costo/op |
+|---|---|---|---|---|
+| 1 | Churn Predictor | ✅ Completado | 20/20 | ~$0.0004 (Haiku) |
+| 2 | Re-engagement Agent | ✅ Completado | 18/18 | ~$0.010 (Sonnet) |
+| 3 | Matching Notifier | ✅ Completado | 15/15 | ~$0.0002 (Haiku) |
+| 4 | Profile Optimizer | ✅ Completado | 16/16 | ~$0.015 (Sonnet) |
+| 5 | Employer Signal Agent | ✅ Completado | 16/16 | ~$0.001 (Haiku) |
+
+**Total tests Fase 2: 85/85 ✅**
+
+### Próximos pasos sugeridos
+
+- **Pruebas en real:** correr demos con datos reales (Gateway activo + Supabase)
+- **Railway deploy:** desplegar el sistema completo para acceso sin Mac encendida
+- **Integraciones reales:** conectar canales de email (Mailtrap/SendGrid) y WhatsApp (Meta sandbox)
 
 ---
 

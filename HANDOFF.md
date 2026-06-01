@@ -1,8 +1,8 @@
 # HANDOFF — Elempleo AI Growth Engine
 > Para: Claude Code  
-> De: sesión Fase 2 completa (agentes 3 y 4 verificados)
-> Fecha: 2026-05-31  
-> Estado: Fase 1 completa. Fase 2 completa en 4/5 (Churn + Re-engagement + Matching Notifier + Profile Optimizer). Próximo: Employer Signal Agent.
+> De: sesión Fase 2 completa — 5/5 agentes verificados
+> Fecha: 2026-05-31
+> Estado: Fase 1 ✅ + Fase 2 ✅ COMPLETAS. 85/85 tests pasando. Próximos pasos: pruebas en real, Railway deploy o integraciones de canal.
 
 ---
 
@@ -34,15 +34,17 @@ Stack 100% operativo en cloud. Verificado con `make test` — 4/4 servicios en v
 | Early Activation Agent | ✅ | Secuencia 72h, 5/5 pasos, 0 fallidos |
 | Docker Desktop | ✅ eliminado | ~1.6GB RAM liberada en el M1 |
 
-### ✅ Fase 2 — 4/5 COMPLETA
+### ✅ Fase 2 — COMPLETA (5/5)
 
-| # | Agente | Estado | Tests | Depende de |
+| # | Agente | Estado | Tests | Scheduler |
 |---|---|---|---|---|
-| 1 | **Churn Predictor** | ✅ Completado | 20/20 | — |
-| 2 | **Re-engagement Agent** | ✅ Completado | 18/18 | Churn Predictor (#1) |
-| 3 | **Matching Notifier** | ✅ Completado | 15/15 | Qdrant (ya listo) |
-| 4 | **Profile Optimizer** | ✅ Completado | 16/16 | Qdrant (ya listo) |
-| 5 | **Employer Signal Agent** | ⏳ Siguiente | — | Datos de employer activity |
+| 1 | **Churn Predictor** | ✅ Completado | 20/20 | Cada hora |
+| 2 | **Re-engagement Agent** | ✅ Completado | 18/18 | Cada 30 min, dedup 72h |
+| 3 | **Matching Notifier** | ✅ Completado | 15/15 | Cada 6h, dedup 72h |
+| 4 | **Profile Optimizer** | ✅ Completado | 16/16 | Diario (24h) |
+| 5 | **Employer Signal Agent** | ✅ Completado | 16/16 | Cada 15 min, dedup 24h |
+
+**Total: 85/85 tests pasando ✅**
 
 ---
 
@@ -213,7 +215,7 @@ elempleo-ai-growth/
 │   ├── reengagement/          ← ReengagementAgent: mensajes personalizados, dedup 72h
 │   ├── matching_notifier/     ← MatchingNotifierAgent: búsqueda inversa Qdrant, dedup 72h
 │   ├── profile_optimizer/     ← ProfileOptimizerAgent: gap analysis perfil vs vacantes
-│   └── employer_signal/       ← EmployerSignalAgent: ⏳ por construir
+│   └── employer_signal/       ← EmployerSignalAgent: señales de empleadores + simulador POC
 │
 ├── cdp/
 │   ├── events.py              ← CDPClient (solo PostgreSQL, sin Redis) + Events
@@ -383,17 +385,18 @@ make gateway-dev
 ngrok http 8000
 ```
 
-**Siguiente agente: Employer Signal Agent (#5)**
+**Fase 2 completa. No hay agentes pendientes.**
 
-### Qué hace el Employer Signal Agent
-- **Input:** señal de actividad de un empleador (visualización de perfil, búsqueda activa, etc.)
-- **Proceso:** detecta intención de contratación real, identifica candidatos relevantes, notifica proactivamente
-- **Output:** notificación al candidato ("una empresa vio tu perfil — postúlate ahora") + evento en CDP
-- **Dependencia clave:** requiere datos reales de actividad de empleadores (no disponibles en mock data)
-- **Estrategia sugerida para mock:** simular señales de empleadores con datos sintéticos para el POC
+### Parámetros configurables en .env
 
-### Parámetros configurables ya establecidos (para referencia)
 | Variable | Default | Agente |
 |---|---|---|
-| `MATCHING_JOB_WINDOW_HOURS` | `6` | Matching Notifier |
-| `MATCHING_DEDUP_HOURS` | `72` | Matching Notifier |
+| `MATCHING_JOB_WINDOW_HOURS` | `6` | Matching Notifier — ventana de vacantes nuevas |
+| `MATCHING_DEDUP_HOURS` | `72` | Matching Notifier — antiduplicados |
+
+### Opciones de continuación (en orden de impacto sugerido)
+
+1. **Pruebas en real con Claude** — correr `make demo-employer` (sin `--no-llm`) con Gateway activo para ver mensajes reales generados por Haiku/Sonnet
+2. **Conectar canales reales** — Mailtrap (email sandbox gratuito) o WhatsApp Meta Sandbox para recibir notificaciones reales en vez de LogChannel
+3. **Railway deploy** — desplegar el sistema para que corra sin depender de la Mac encendida
+4. **Datos reales de elempleo** — reemplazar mock_jobs/mock_users con datos reales del portal

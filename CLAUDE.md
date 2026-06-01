@@ -73,13 +73,27 @@ elempleo-ai-growth/
 │   │   ├── models.py            # Pydantic models
 │   │   ├── prompts.py           # System prompts
 │   │   └── scheduler.py         # Polling horario sobre usuarios inactivos >7 días
-│   └── reengagement/
-│       ├── agent.py             # ReengagementAgent — mensajes personalizados de reactivación
+│   ├── reengagement/
+│   │   ├── agent.py             # ReengagementAgent — mensajes personalizados de reactivación
+│   │   ├── api.py               # Router FastAPI
+│   │   ├── demo.py              # Demo CLI
+│   │   ├── models.py            # Pydantic models
+│   │   ├── prompts.py           # System prompts
+│   │   └── scheduler.py         # Polling 30min, deduplicación 72h
+│   ├── matching_notifier/
+│   │   ├── agent.py             # MatchingNotifierAgent — búsqueda inversa + alerta candidatos
+│   │   ├── api.py               # Router FastAPI
+│   │   ├── demo.py              # Demo CLI
+│   │   ├── models.py            # Pydantic models
+│   │   ├── prompts.py           # System prompts (Haiku)
+│   │   └── scheduler.py         # Polling 6h sobre vacantes nuevas, dedup 72h
+│   └── profile_optimizer/
+│       ├── agent.py             # ProfileOptimizerAgent — gap analysis perfil vs vacantes
 │       ├── api.py               # Router FastAPI
 │       ├── demo.py              # Demo CLI
-│       ├── models.py            # Pydantic models
-│       ├── prompts.py           # System prompts
-│       └── scheduler.py         # Polling 30min, deduplicación 72h
+│       ├── models.py            # Pydantic models (SuggestionPriority, ProfileSuggestion)
+│       ├── prompts.py           # System prompts (Sonnet)
+│       └── scheduler.py         # Polling diario sobre perfiles con completion < 70%
 ├── cdp/
 │   ├── events.py                # CDPClient + Events (catálogo de event_types) — SIN Redis
 │   └── schema.sql               # Schema PostgreSQL: users, jobs, events, agent_logs, sequences
@@ -93,10 +107,14 @@ elempleo-ai-growth/
 │   ├── embedder.py              # JobEmbedder: index_jobs, search_jobs, recommend_for_user
 │   └── setup.py                 # create_collections() para Qdrant Cloud
 ├── scripts/
-│   ├── load_data.py             # Carga mock_jobs.json y mock_users.json al stack
-│   ├── health_check.py          # Verifica los 4 servicios del stack (sin Redis)
-│   ├── verify_agent.py          # Tests del Job Match Agent
-│   └── verify_early_activation.py # Tests del Early Activation Agent (66 tests)
+│   ├── load_data.py                    # Carga mock_jobs.json y mock_users.json al stack
+│   ├── health_check.py                 # Verifica los 4 servicios del stack (sin Redis)
+│   ├── verify_agent.py                 # Tests del Job Match Agent
+│   ├── verify_early_activation.py      # Tests del Early Activation Agent (66 tests)
+│   ├── verify_churn_predictor.py       # Tests del Churn Predictor (20 tests)
+│   ├── verify_reengagement.py          # Tests del Re-engagement Agent (18 tests)
+│   ├── verify_matching_notifier.py     # Tests del Matching Notifier (15 tests)
+│   └── verify_profile_optimizer.py     # Tests del Profile Optimizer (16 tests)
 ├── data/
 │   ├── mock_jobs.json           # 25 vacantes colombianas realistas
 │   └── mock_users.json          # 20 perfiles de candidatos
@@ -129,8 +147,10 @@ make demo-activation-offline # Demo sin llamar a Claude (más rápido)
 # Verificación
 make verify-agent            # Tests Job Match Agent
 make verify-activation       # Tests Early Activation Agent
-make verify-churn            # Tests Churn Predictor
-make verify-reengagement     # Tests Re-engagement Agent
+make verify-churn            # Tests Churn Predictor (20 tests)
+make verify-reengagement     # Tests Re-engagement Agent (18 tests)
+make verify-matching         # Tests Matching Notifier (15 tests)
+make verify-profile          # Tests Profile Optimizer (16 tests)
 
 # URL pública para pruebas (requiere Gateway corriendo)
 ngrok http 8000              # Genera URL pública temporal → /docs para explorar
@@ -202,11 +222,14 @@ class NuevoAgente(BaseAgent):
 | `claude-haiku-4-5-20251001` | Clasificación, extracción | $0.25/M tokens | $1.25/M tokens |
 | `claude-sonnet-4-6` | Generación, razonamiento | $3.00/M tokens | $15.00/M tokens |
 
-**Costo real observado (Fase 1):**
+**Costo real observado:**
 - Job Match reranking 16 candidatos: ~$0.023 USD
 - Early Activation 1 mensaje: ~$0.010 USD
 - Secuencia 72h completa (5 pasos): ~$0.050 USD por usuario
 - Clasificación simple Haiku: ~$0.0003 USD
+- Churn Predictor por usuario: ~$0.0004 USD (Haiku)
+- Matching Notifier por notificación: ~$0.0002 USD (Haiku)
+- Profile Optimizer por reporte: ~$0.015 USD (Sonnet)
 
 El routing Haiku/Sonnet es automático en el LLM Gateway según `task_type`.
 
@@ -225,15 +248,15 @@ El routing Haiku/Sonnet es automático en el LLM Gateway según `task_type`.
 | Event Bus (Redis) | ❌ eliminado | Reemplazado por polling sobre PostgreSQL |
 | Docker | ❌ eliminado | 0 contenedores, ~1.6GB RAM liberada |
 
-### Fase 2 — En curso
+### Fase 2 — En curso (4/5 completos)
 
-| # | Agente | Estado |
-|---|---|---|
-| 1 | Churn Predictor | ✅ Completado |
-| 2 | Re-engagement Agent | ✅ Completado |
-| 3 | Matching Notifier | ⏳ Siguiente |
-| 4 | Profile Optimizer | ⏳ Pendiente |
-| 5 | Employer Signal Agent | ⏳ Pendiente |
+| # | Agente | Estado | Tests |
+|---|---|---|---|
+| 1 | Churn Predictor | ✅ Completado | 20/20 |
+| 2 | Re-engagement Agent | ✅ Completado | 18/18 |
+| 3 | Matching Notifier | ✅ Completado | 15/15 |
+| 4 | Profile Optimizer | ✅ Completado | 16/16 |
+| 5 | Employer Signal Agent | ⏳ Siguiente | — |
 
 ---
 

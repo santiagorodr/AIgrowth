@@ -1,8 +1,8 @@
 # HANDOFF — Elempleo AI Growth Engine
 > Para: Claude Code  
-> De: sesión GitHub + ngrok + avance Fase 2  
+> De: sesión Fase 2 completa (agentes 3 y 4 verificados)
 > Fecha: 2026-05-31  
-> Estado: Fase 1 completa. Fase 2A completa (Churn Predictor + Re-engagement). Próximo: Matching Notifier.
+> Estado: Fase 1 completa. Fase 2 completa en 4/5 (Churn + Re-engagement + Matching Notifier + Profile Optimizer). Próximo: Employer Signal Agent.
 
 ---
 
@@ -34,15 +34,15 @@ Stack 100% operativo en cloud. Verificado con `make test` — 4/4 servicios en v
 | Early Activation Agent | ✅ | Secuencia 72h, 5/5 pasos, 0 fallidos |
 | Docker Desktop | ✅ eliminado | ~1.6GB RAM liberada en el M1 |
 
-### ✅ Fase 2A — COMPLETA (Churn Predictor + Re-engagement)
+### ✅ Fase 2 — 4/5 COMPLETA
 
-| # | Agente | Estado | Depende de |
-|---|---|---|---|
-| 1 | **Churn Predictor** | ✅ Completado | — |
-| 2 | **Re-engagement Agent** | ✅ Completado | Churn Predictor (#1) |
-| 3 | **Matching Notifier** | ⏳ Siguiente | Qdrant (ya listo) |
-| 4 | **Profile Optimizer** | ⏳ Pendiente | Qdrant (ya listo) |
-| 5 | **Employer Signal Agent** | ⏳ Pendiente | Datos de employer activity |
+| # | Agente | Estado | Tests | Depende de |
+|---|---|---|---|---|
+| 1 | **Churn Predictor** | ✅ Completado | 20/20 | — |
+| 2 | **Re-engagement Agent** | ✅ Completado | 18/18 | Churn Predictor (#1) |
+| 3 | **Matching Notifier** | ✅ Completado | 15/15 | Qdrant (ya listo) |
+| 4 | **Profile Optimizer** | ✅ Completado | 16/16 | Qdrant (ya listo) |
+| 5 | **Employer Signal Agent** | ⏳ Siguiente | — | Datos de employer activity |
 
 ---
 
@@ -208,7 +208,12 @@ elempleo-ai-growth/
 │   ├── base.py                ← BaseAgent (leer antes de crear agente nuevo)
 │   ├── server.py              ← FastAPI principal, registra todos los routers
 │   ├── job_match/             ← JobMatchAgent: semántica + reranking LLM
-│   └── early_activation/      ← EarlyActivationAgent: secuencia 72h
+│   ├── early_activation/      ← EarlyActivationAgent: secuencia 72h
+│   ├── churn_predictor/       ← ChurnPredictorAgent: clasifica riesgo HIGH/MEDIUM/LOW
+│   ├── reengagement/          ← ReengagementAgent: mensajes personalizados, dedup 72h
+│   ├── matching_notifier/     ← MatchingNotifierAgent: búsqueda inversa Qdrant, dedup 72h
+│   ├── profile_optimizer/     ← ProfileOptimizerAgent: gap analysis perfil vs vacantes
+│   └── employer_signal/       ← EmployerSignalAgent: ⏳ por construir
 │
 ├── cdp/
 │   ├── events.py              ← CDPClient (solo PostgreSQL, sin Redis) + Events
@@ -378,11 +383,17 @@ make gateway-dev
 ngrok http 8000
 ```
 
-**Siguiente agente: Matching Notifier (#3)**
+**Siguiente agente: Employer Signal Agent (#5)**
 
-### Qué hace el Matching Notifier
-- **Input:** nueva vacante publicada en Supabase
-- **Proceso:** búsqueda inversa en Qdrant (vacante → candidatos con alto match), Haiku personaliza el mensaje
-- **Output:** notificación al candidato por canal preferido + evento `match.notification_sent` en CDP
-- **Schedule:** polling sobre vacantes nuevas (publicadas en las últimas X horas)
-- **Costo estimado:** ~$0.001–0.002 por alerta (Haiku)
+### Qué hace el Employer Signal Agent
+- **Input:** señal de actividad de un empleador (visualización de perfil, búsqueda activa, etc.)
+- **Proceso:** detecta intención de contratación real, identifica candidatos relevantes, notifica proactivamente
+- **Output:** notificación al candidato ("una empresa vio tu perfil — postúlate ahora") + evento en CDP
+- **Dependencia clave:** requiere datos reales de actividad de empleadores (no disponibles en mock data)
+- **Estrategia sugerida para mock:** simular señales de empleadores con datos sintéticos para el POC
+
+### Parámetros configurables ya establecidos (para referencia)
+| Variable | Default | Agente |
+|---|---|---|
+| `MATCHING_JOB_WINDOW_HOURS` | `6` | Matching Notifier |
+| `MATCHING_DEDUP_HOURS` | `72` | Matching Notifier |

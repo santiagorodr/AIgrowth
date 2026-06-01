@@ -19,6 +19,7 @@ Uso:
 
 from __future__ import annotations
 
+import os
 import time
 import uuid
 from typing import Any
@@ -42,6 +43,10 @@ log = structlog.get_logger(__name__)
 MATCH_THRESHOLD   = 0.45   # Score mínimo de similitud coseno
 MAX_USERS_PER_JOB = 20     # Máx candidatos a notificar por vacante
 
+# Parámetros configurables via .env
+JOB_WINDOW_HOURS  = int(os.getenv("MATCHING_JOB_WINDOW_HOURS", "6"))    # vacantes nuevas
+DEDUP_HOURS       = int(os.getenv("MATCHING_DEDUP_HOURS", "72"))         # ventana antiduplicados
+
 
 class MatchingNotifierAgent(BaseAgent):
     """
@@ -61,7 +66,7 @@ class MatchingNotifierAgent(BaseAgent):
 
     # ── Procesamiento batch ────────────────────────────────────────────────────
 
-    async def process_new_jobs(self, hours: int = 24) -> BatchNotificationResult:
+    async def process_new_jobs(self, hours: int = JOB_WINDOW_HOURS) -> BatchNotificationResult:
         """
         Procesa todas las vacantes nuevas publicadas en las últimas N horas
         que aún no han sido procesadas.
@@ -250,18 +255,18 @@ class MatchingNotifierAgent(BaseAgent):
             return []
 
     async def _is_already_notified(self, user_id: str, job_id: str) -> bool:
-        """Verifica si ya se notificó a este usuario sobre esta vacante en los últimos 7 días."""
+        """Verifica si ya se notificó a este usuario sobre esta vacante en la ventana de dedup."""
         if not self._pool:
             return False
         async with self._pool.acquire() as conn:
             result = await conn.fetchval(
-                """
+                f"""
                 SELECT EXISTS (
                     SELECT 1 FROM events
                     WHERE user_id = $1::uuid
                       AND event_type = 'match.notification_sent'
                       AND properties->>'job_id' = $2
-                      AND timestamp > NOW() - INTERVAL '7 days'
+                      AND timestamp > NOW() - INTERVAL '1 hour' * {DEDUP_HOURS}
                 )
                 """,
                 user_id,

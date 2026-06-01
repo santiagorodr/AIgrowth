@@ -46,7 +46,7 @@ class BatchNotificationResult(BaseModel):
 
 
 class ProcessJobsRequest(BaseModel):
-    hours: int = Field(default=24, ge=1, le=168)   # hasta 7 días
+    hours: int = Field(default=6, ge=1, le=168)    # default 6h, hasta 7 días
 
 
 class ProcessJobRequest(BaseModel):

@@ -262,7 +262,7 @@ async def test_process_job_candidato_ya_notificado():
         r = await agent.process_job(_job())
         assert r.skipped == 1
         assert r.notified == 0
-        ok("process_job omite candidatos ya notificados en 7 días")
+        ok("process_job omite candidatos ya notificados en ventana de dedup (72h por defecto)")
     except Exception as e:
         fail("process_job deduplicación", str(e))
 

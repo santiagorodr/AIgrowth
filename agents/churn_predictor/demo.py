@@ -122,7 +122,6 @@ async def _run_demo(days: int, no_llm: bool) -> None:
         else:
             d_inactive = 0
 
-        preview.add_column if False else None  # type: ignore
         preview.add_row(
             u.get("full_name", "N/A"),
             u.get("city", "N/A"),

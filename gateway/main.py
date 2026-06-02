@@ -25,9 +25,8 @@ load_dotenv(Path(__file__).parent.parent / ".env")
 
 import asyncpg
 import structlog
-from fastapi import FastAPI, HTTPException, Request
+from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
 
 from claude_client import ClaudeClient
 from models import CompletionRequest, CompletionResponse, HealthResponse

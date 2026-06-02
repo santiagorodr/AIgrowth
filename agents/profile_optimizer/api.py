@@ -15,7 +15,7 @@ from fastapi import APIRouter, HTTPException
 
 from agents.profile_optimizer.agent import ProfileOptimizerAgent
 from agents.profile_optimizer.models import (
-    AnalyzeBatchRequest, AnalyzeUserRequest,
+    AnalyzeBatchRequest,
     BatchOptimizationResult, OptimizationReport,
 )
 from cdp.events import CDPClient

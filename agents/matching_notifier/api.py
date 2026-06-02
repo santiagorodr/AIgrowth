@@ -20,7 +20,6 @@ from agents.matching_notifier.agent import MatchingNotifierAgent
 from agents.matching_notifier.models import (
     BatchNotificationResult,
     JobNotificationResult,
-    ProcessJobRequest,
     ProcessJobsRequest,
 )
 from cdp.events import CDPClient

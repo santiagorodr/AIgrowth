@@ -10,7 +10,6 @@ Claude API Client con routing inteligente y tracking de costos.
 from __future__ import annotations
 
 import time
-from typing import AsyncIterator
 
 import anthropic
 import structlog

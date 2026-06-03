@@ -71,6 +71,7 @@ class EarlyActivationAgent(BaseAgent):
     def __init__(self, cdp=None, bus=None, pool=None):
         super().__init__(cdp=cdp, bus=bus)
         self._pool = pool
+        self._last_generated_message = None  # caché del último mensaje generado
 
     # ══════════════════════════════════════════════════════════════════════════
     # PUBLIC API
@@ -667,14 +668,19 @@ class EarlyActivationAgent(BaseAgent):
         """
         Ejecuta un paso sin persistencia en BD.
         Útil para el modo demo/POC donde no hay PostgreSQL disponible.
+
+        El mensaje generado queda cacheado en self._last_generated_message
+        para que el demo pueda mostrarlo sin necesidad de un segundo LLM call.
         """
         step_conf = SEQUENCE_BY_KEY[step_key]
         context   = await self._build_context(step_key, event)
 
         try:
             generated = await self._generate_message(step_key, event, context)
+            self._last_generated_message = generated  # caché para el demo
         except Exception as exc:
             self.log.error("step.in_memory.failed", step=step_key, error=str(exc))
+            self._last_generated_message = None
             return ChannelResult(success=False, channel=step_conf.channel, error=str(exc))
 
         result = await self._send_message(step_key, event, generated, step_conf)

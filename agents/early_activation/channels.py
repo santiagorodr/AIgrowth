@@ -76,7 +76,7 @@ def _build_html_email(subject: str, body: str, to_email: str) -> str:
 
           <!-- ── Header ── -->
           <tr>
-            <td style="background:#e8411e;border-radius:8px 8px 0 0;
+            <td style="background:#053d6a;border-radius:8px 8px 0 0;
                         padding:24px 40px;text-align:center;">
               <span style="color:#ffffff;font-size:26px;font-weight:bold;
                            letter-spacing:-0.5px;text-decoration:none;">
@@ -97,7 +97,7 @@ def _build_html_email(subject: str, body: str, to_email: str) -> str:
             <td style="background:#ffffff;padding:0 40px 36px 40px;
                         text-align:center;">
               <a href="https://www.elempleo.com"
-                 style="display:inline-block;background:#e8411e;color:#ffffff;
+                 style="display:inline-block;background:#2985c7;color:#ffffff;
                         font-size:15px;font-weight:bold;text-decoration:none;
                         padding:14px 36px;border-radius:6px;
                         letter-spacing:0.3px;">
@@ -125,17 +125,17 @@ def _build_html_email(subject: str, body: str, to_email: str) -> str:
               </p>
               <p style="margin:0;font-size:12px;">
                 <a href="https://www.elempleo.com/unsuscribe"
-                   style="color:#e8411e;text-decoration:none;">
+                   style="color:#2985c7;text-decoration:none;">
                   Cancelar suscripción
                 </a>
                 &nbsp;·&nbsp;
                 <a href="https://www.elempleo.com"
-                   style="color:#e8411e;text-decoration:none;">
+                   style="color:#2985c7;text-decoration:none;">
                   elempleo.com
                 </a>
                 &nbsp;·&nbsp;
                 <a href="https://www.elempleo.com/politica-privacidad"
-                   style="color:#e8411e;text-decoration:none;">
+                   style="color:#2985c7;text-decoration:none;">
                   Política de privacidad
                 </a>
               </p>

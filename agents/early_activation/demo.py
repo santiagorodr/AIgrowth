@@ -215,12 +215,11 @@ async def _run_demo(
 
             progress.update(task_id, completed=True)
 
-        # Obtener el último mensaje generado para mostrarlo
-        # En _run_step_in_memory el mensaje se genera internamente;
-        # para la demo lo regeneramos sin envío para capturarlo
-        try:
-            context   = await agent._build_context(step_conf.key, event)
-            generated = await agent._generate_message(step_conf.key, event, context)
+        # Mostrar el mensaje que fue realmente enviado (cacheado en el agente)
+        # Sin regenerar — evita doble LLM call y garantiza que se muestra
+        # exactamente lo que llegó al destinatario.
+        generated = agent._last_generated_message
+        if generated:
             _print_message_panel(
                 step_key=step_conf.key,
                 channel=result.channel,
@@ -229,7 +228,7 @@ async def _run_demo(
                 whatsapp_text=generated.whatsapp_text,
                 success=result.success,
             )
-        except Exception:
+        else:
             console.print(f"[dim](mensaje generado — canal: {result.channel})[/dim]")
 
         results.append({

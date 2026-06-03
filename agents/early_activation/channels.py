@@ -34,6 +34,115 @@ from .models import Channel, ChannelResult
 
 log = structlog.get_logger(__name__)
 
+
+# ── HTML Email Template ───────────────────────────────────────────────────────
+def _build_html_email(subject: str, body: str, to_email: str) -> str:
+    """
+    Construye un email HTML responsivo con la marca de elempleo.com.
+    Convierte el texto plano del agente en un email estructurado con:
+    - Header con logo elempleo
+    - Cuerpo formateado con párrafos
+    - Botón CTA
+    - Footer con enlace de cancelar suscripción
+    """
+    # Convertir saltos de línea en párrafos HTML
+    paragraphs = [p.strip() for p in body.strip().split("\n\n") if p.strip()]
+    body_html = "".join(
+        f'<p style="margin:0 0 16px 0;color:#333333;font-size:15px;line-height:1.7;">'
+        f'{p.replace(chr(10), "<br>")}</p>'
+        for p in paragraphs
+    )
+
+    return f"""<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{subject}</title>
+</head>
+<body style="margin:0;padding:0;background:#f2f2f2;font-family:Arial,Helvetica,sans-serif;">
+  <table width="100%" cellpadding="0" cellspacing="0" border="0"
+         style="background:#f2f2f2;">
+    <tr>
+      <td align="center" style="padding:32px 16px;">
+        <table width="600" cellpadding="0" cellspacing="0" border="0"
+               style="max-width:600px;width:100%;">
+
+          <!-- ── Header ── -->
+          <tr>
+            <td style="background:#e8411e;border-radius:8px 8px 0 0;
+                        padding:24px 40px;text-align:center;">
+              <span style="color:#ffffff;font-size:26px;font-weight:bold;
+                           letter-spacing:-0.5px;text-decoration:none;">
+                elempleo<span style="color:#ffd200;">.com</span>
+              </span>
+            </td>
+          </tr>
+
+          <!-- ── Cuerpo ── -->
+          <tr>
+            <td style="background:#ffffff;padding:36px 40px 24px 40px;">
+              {body_html}
+            </td>
+          </tr>
+
+          <!-- ── CTA Button ── -->
+          <tr>
+            <td style="background:#ffffff;padding:0 40px 36px 40px;
+                        text-align:center;">
+              <a href="https://www.elempleo.com"
+                 style="display:inline-block;background:#e8411e;color:#ffffff;
+                        font-size:15px;font-weight:bold;text-decoration:none;
+                        padding:14px 36px;border-radius:6px;
+                        letter-spacing:0.3px;">
+                Ver vacantes →
+              </a>
+            </td>
+          </tr>
+
+          <!-- ── Divider ── -->
+          <tr>
+            <td style="background:#ffffff;padding:0 40px;">
+              <hr style="border:none;border-top:1px solid #eeeeee;margin:0;">
+            </td>
+          </tr>
+
+          <!-- ── Footer ── -->
+          <tr>
+            <td style="background:#fafafa;border-radius:0 0 8px 8px;
+                        padding:20px 40px;text-align:center;">
+              <p style="margin:0 0 6px 0;color:#aaaaaa;font-size:12px;
+                         line-height:1.6;">
+                Recibiste este correo en
+                <span style="color:#555555;">{to_email}</span>
+                porque tienes una cuenta en elempleo.com.
+              </p>
+              <p style="margin:0;font-size:12px;">
+                <a href="https://www.elempleo.com/unsuscribe"
+                   style="color:#e8411e;text-decoration:none;">
+                  Cancelar suscripción
+                </a>
+                &nbsp;·&nbsp;
+                <a href="https://www.elempleo.com"
+                   style="color:#e8411e;text-decoration:none;">
+                  elempleo.com
+                </a>
+                &nbsp;·&nbsp;
+                <a href="https://www.elempleo.com/politica-privacidad"
+                   style="color:#e8411e;text-decoration:none;">
+                  Política de privacidad
+                </a>
+              </p>
+            </td>
+          </tr>
+
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>"""
+
 # ── Credenciales desde .env ────────────────────────────────────────────────────
 MAILTRAP_TOKEN      = os.getenv("MAILTRAP_TOKEN", "")
 MAILTRAP_INBOX_ID   = os.getenv("MAILTRAP_INBOX_ID", "")
@@ -106,11 +215,14 @@ class EmailChannel(BaseChannel):
             log.warning("email.not_configured", hint="Agrega MAILTRAP_TOKEN en .env para enviar emails reales")
             return await LogChannel().send(to=to, subject=subject, body=body)
 
+        html_body = _build_html_email(subject=subject, body=body, to_email=to)
+
         payload = {
             "from": {"email": "noreply@elempleo.com", "name": from_name},
             "to":   [{"email": to}],
             "subject": subject,
-            "text": body,
+            "text": body,        # Fallback para clientes sin soporte HTML
+            "html": html_body,   # Versión HTML completa
         }
 
         try:

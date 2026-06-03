@@ -622,33 +622,56 @@ class EarlyActivationAgent(BaseAgent):
         msg: GeneratedMessage,
         step_conf,
     ) -> ChannelResult:
-        """Envía el mensaje por el canal apropiado con fallback automático."""
+        """
+        Envía el mensaje por el canal apropiado con fallback automático.
+
+        Lógica de fallback:
+          1. Si el canal primario no está configurado (e.g. WhatsApp sin token),
+             se usa el fallback_channel directamente — sin pasar por LogChannel.
+          2. Si el canal primario está configurado pero falla en el envío,
+             se intenta con el fallback_channel.
+        """
         channel_instance = get_channel(step_conf.channel)
 
-        if step_conf.channel == Channel.EMAIL:
+        # ── Fallback anticipado si el canal primario no está disponible ─────
+        using_fallback = False
+        if (
+            not channel_instance.is_configured()
+            and step_conf.fallback_channel != step_conf.channel
+        ):
+            self.log.info(
+                "channel.fallback_early",
+                original=step_conf.channel.value,
+                fallback=step_conf.fallback_channel.value,
+                reason="canal primario no configurado",
+            )
+            channel_instance = get_channel(step_conf.fallback_channel)
+            using_fallback = True
+
+        # ── Seleccionar to/body según el canal efectivo ──────────────────────
+        effective_channel = step_conf.fallback_channel if using_fallback else step_conf.channel
+
+        if effective_channel == Channel.EMAIL:
             to   = event.email or ""
             body = msg.body
-            result = await channel_instance.send(to=to, subject=msg.subject, body=body)
-
-        elif step_conf.channel == Channel.WHATSAPP:
+        elif effective_channel == Channel.WHATSAPP:
             to   = event.phone or ""
             body = msg.whatsapp_text or msg.body
-            result = await channel_instance.send(to=to, subject=msg.subject, body=body)
-
         else:
-            # PUSH u otro → LogChannel
-            result = await channel_instance.send(
-                to=event.email or event.phone or event.user_id,
-                subject=msg.subject,
-                body=msg.body,
-            )
+            to   = event.email or event.phone or event.user_id
+            body = msg.body
 
-        # Si falló, intentar con el fallback_channel
-        if not result.success and step_conf.fallback_channel != step_conf.channel:
+        result = await channel_instance.send(to=to, subject=msg.subject, body=body)
+        if using_fallback:
+            result.fallback_used = True
+
+        # ── Fallback reactivo si el canal configurado falla en el envío ──────
+        if not result.success and not using_fallback and step_conf.fallback_channel != step_conf.channel:
             self.log.warning(
-                "channel.fallback",
-                original=step_conf.channel,
-                fallback=step_conf.fallback_channel,
+                "channel.fallback_reactive",
+                original=step_conf.channel.value,
+                fallback=step_conf.fallback_channel.value,
+                reason="error en envío",
             )
             fallback = get_channel(step_conf.fallback_channel)
             to   = event.email or event.phone or ""

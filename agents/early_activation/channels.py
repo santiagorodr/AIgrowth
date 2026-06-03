@@ -30,6 +30,12 @@ from abc import ABC, abstractmethod
 import httpx
 import structlog
 
+from pathlib import Path
+
+from dotenv import load_dotenv
+
+load_dotenv(Path(__file__).parent.parent.parent / ".env")
+
 from .models import Channel, ChannelResult
 
 log = structlog.get_logger(__name__)

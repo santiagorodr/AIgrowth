@@ -50,7 +50,10 @@ async def lifespan(app: FastAPI):
     )
 
     _claude = ClaudeClient(api_key=api_key)
-    _pg_pool = await asyncpg.create_pool(postgres_url, min_size=2, max_size=5)
+    if postgres_url:
+        _pg_pool = await asyncpg.create_pool(postgres_url, min_size=2, max_size=5)
+    else:
+        log.warning("gateway.no_postgres", hint="Sin POSTGRES_URL — los logs de llamadas LLM se desactivan")
 
     log.info("gateway.started")
     yield

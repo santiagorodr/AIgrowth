@@ -1,8 +1,8 @@
 # HANDOFF — Elempleo AI Growth Engine
 > Para: Claude Code  
-> De: sesión Fase 2 completa — 5/5 agentes verificados
-> Fecha: 2026-05-31
-> Estado: Fase 1 ✅ + Fase 2 ✅ COMPLETAS. 85/85 tests pasando. Próximos pasos: pruebas en real, Railway deploy o integraciones de canal.
+> De: sesión integraciones reales — Railway + Mailtrap + demos en vivo
+> Fecha: 2026-06-03
+> Estado: Sistema en producción. Gateway en Railway 24/7. Email real verificado con Mailtrap. 85/85 tests pasando.
 
 ---
 
@@ -27,7 +27,7 @@ Stack 100% operativo en cloud. Verificado con `make test` — 4/4 servicios en v
 | PostgreSQL → **Supabase** | ✅ | 25 vacantes, 20 usuarios cargados |
 | Redis → **Eliminado** | ✅ | Reemplazado por polling PostgreSQL |
 | Qdrant → **Qdrant Cloud** | ✅ | `elempleo_jobs` (25 pts) + `elempleo_users` indexadas |
-| LLM Gateway (FastAPI :8000) | ✅ | Proceso Python local, Anthropic API conectada |
+| LLM Gateway → **Railway** | ✅ | 24/7 en producción: `elempleo-gateway-production.up.railway.app` |
 | Embeddings semánticos | ✅ | `make test` devuelve resultados con score >0.5 |
 | BaseAgent | ✅ | `agents/base.py` — clase base de todos los agentes |
 | Job Match Agent | ✅ | Búsqueda semántica + reranking LLM (~$0.023/búsqueda) |
@@ -50,19 +50,25 @@ Stack 100% operativo en cloud. Verificado con `make test` — 4/4 servicios en v
 
 ## Cómo levantar el stack (instrucciones exactas)
 
-```bash
-# Solo necesitas UNA terminal
-cd ~/Documents/Claude/"Growth agents personas EE"/elempleo-ai-growth
+**El Gateway ya corre en Railway 24/7 — no necesitas levantarlo manualmente.**
 
-# 1. Verificar que los servicios cloud están vivos
+```bash
+# Terminal 1 — verificar que todo está vivo
+cd ~/Documents/Claude/"Growth agents personas EE"/elempleo-ai-growth
 make test
 
-# 2. Levantar el LLM Gateway (queda bloqueada, es normal)
-make gateway-dev
+# Terminal 2 — correr demos (apuntan a Gateway local por defecto)
+make demo-employer           # Employer Signal con Claude real
+make demo-activation         # Early Activation secuencia 72h
+make demo-activation-offline # Sin llamar a Claude (más rápido)
 
-# En otra terminal, si quieres correr demos o agentes:
-make demo-job-match
-make demo-activation-offline
+# Ver logs del Gateway en producción (Railway)
+railway logs
+```
+
+**Para desarrollo local** (si necesitas modificar el Gateway):
+```bash
+make gateway-dev   # levanta en :8000, queda bloqueada
 ```
 
 **Si Qdrant Cloud queda vacío** (raro, pero puede pasar tras migración):
@@ -361,31 +367,34 @@ Events.AGENT_ERROR              # "agent.error"
 
 ---
 
-## Infraestructura adicional configurada (2026-05-31)
+## Infraestructura configurada (2026-06-03)
 
 | Herramienta | Propósito | Notas |
 |---|---|---|
 | GitHub | Control de versiones | [github.com/santiagorodr/AIgrowth](https://github.com/santiagorodr/AIgrowth) — privado |
-| ngrok | URL pública para pruebas | `ngrok http 8000` — URL temporal, cambia al reiniciar |
+| Railway | LLM Gateway 24/7 | `elempleo-gateway-production.up.railway.app` — auto-deploy desde GitHub main |
+| Mailtrap | Email sandbox | Bandeja: mailtrap.io → Sandboxes → My Sandbox |
+| ngrok | URL pública temporal | `ngrok http 8000` — solo para pruebas locales |
 | gh CLI | Autenticación GitHub | Token guardado en Keychain Mac, no expira |
 
 ---
 
 ## Próxima sesión — por dónde empezar
 
-**Comandos de arranque (ejecutar en orden):**
+**Comandos de arranque:**
 
 ```bash
-# Terminal 1 — verificar stack y levantar Gateway (queda bloqueada)
+# Solo necesitas verificar que los servicios cloud están vivos
 cd ~/Documents/Claude/"Growth agents personas EE"/elempleo-ai-growth
 make test
-make gateway-dev
 
-# Terminal 2 — solo si necesitas URL pública para pruebas
-ngrok http 8000
+# El Gateway ya corre en Railway — no necesitas levantarlo
+# Para demos:
+make demo-employer    # Employer Signal con Claude real + email a Mailtrap
+make demo-activation  # Early Activation secuencia 72h
 ```
 
-**Fase 2 completa. No hay agentes pendientes.**
+**Fase 2 completa + integraciones reales operativas.**
 
 ### Parámetros configurables en .env
 
@@ -393,10 +402,13 @@ ngrok http 8000
 |---|---|---|
 | `MATCHING_JOB_WINDOW_HOURS` | `6` | Matching Notifier — ventana de vacantes nuevas |
 | `MATCHING_DEDUP_HOURS` | `72` | Matching Notifier — antiduplicados |
+| `MAILTRAP_TOKEN` | — | Canal email — sandbox Mailtrap configurado |
+| `MAILTRAP_INBOX_ID` | — | Canal email — inbox ID de Mailtrap |
+| `GATEWAY_URL_PROD` | `https://elempleo-gateway-production.up.railway.app` | URL pública del Gateway |
 
-### Opciones de continuación (en orden de impacto sugerido)
+### Opciones de continuación (Fase 3)
 
-1. **Pruebas en real con Claude** — correr `make demo-employer` (sin `--no-llm`) con Gateway activo para ver mensajes reales generados por Haiku/Sonnet
-2. **Conectar canales reales** — Mailtrap (email sandbox gratuito) o WhatsApp Meta Sandbox para recibir notificaciones reales en vez de LogChannel
-3. **Railway deploy** — desplegar el sistema para que corra sin depender de la Mac encendida
-4. **Datos reales de elempleo** — reemplazar mock_jobs/mock_users con datos reales del portal
+1. **WhatsApp** — conectar Meta Business API Sandbox (`WHATSAPP_TOKEN` en .env)
+2. **Email HTML** — mejorar plantilla con logo, botón CTA y footer unsubscribe
+3. **Datos reales** — reemplazar mock_jobs/mock_users con datos reales del portal
+4. **Monitoreo** — dashboard de costos vía `GET /stats` del Gateway en Railway

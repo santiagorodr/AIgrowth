@@ -11,7 +11,7 @@ Sistema multi-agente de IA para adquisición, activación y retención de candid
 ## Arquitectura del stack
 
 ```
-Mac M1 8GB (solo procesos Python — sin Docker)
+Mac M1 8GB (agentes Python — sin Docker)
 ┌─────────────────────────────────────────────────────────────┐
 │                    AGENTES (Python)                         │
 │   JobMatchAgent  EarlyActivationAgent  ChurnPredictor ...   │
@@ -20,7 +20,8 @@ Mac M1 8GB (solo procesos Python — sin Docker)
 └────────────────────────────┬────────────────────────────────┘
                              │ HTTP
 ┌────────────────────────────▼────────────────────────────────┐
-│              LLM GATEWAY (FastAPI :8000)                    │
+│         LLM GATEWAY — Railway (24/7, cloud)                 │
+│  elempleo-gateway-production.up.railway.app                 │
 │   Routing Haiku/Sonnet · Retries · Cost tracking            │
 └────────┬──────────────────────────────────────┬────────────┘
          │ asyncpg                               │ Anthropic SDK
@@ -38,9 +39,15 @@ Mac M1 8GB (solo procesos Python — sin Docker)
 │  sentence-transformers (local, sin API key)                 │
 │  paraphrase-multilingual-MiniLM-L12-v2 · ~470MB · gratis   │
 └─────────────────────────────────────────────────────────────┘
+┌─────────────────────────────────────────────────────────────┐
+│  Mailtrap Sandbox (email testing)                           │
+│  Canal de email real verificado — fallback a LogChannel     │
+└─────────────────────────────────────────────────────────────┘
 ```
 
 **Event Bus eliminado:** los agentes de Fase 2 usan polling sobre PostgreSQL (Supabase) en lugar de Redis pub/sub. Más simple, sin servicios adicionales, 0 contenedores Docker.
+
+**LLM Gateway en Railway:** corre 24/7 sin depender de la Mac. Deploy automático desde GitHub main. Ver `railway.toml` en la raíz del proyecto.
 
 ---
 
@@ -127,6 +134,7 @@ elempleo-ai-growth/
 │   ├── mock_jobs.json           # 25 vacantes colombianas realistas
 │   └── mock_users.json          # 20 perfiles de candidatos
 ├── docker-compose.yml.bak       # ARCHIVADO — ya no se usa (migrado a cloud)
+├── railway.toml                 # Config de deploy Railway (build context, healthcheck)
 ├── Makefile                     # Comandos principales (ver sección abajo)
 ├── requirements.txt             # Dependencias Python
 └── .env                         # Variables de entorno (ANTHROPIC_API_KEY, etc.)
@@ -137,9 +145,9 @@ elempleo-ai-growth/
 ## Comandos principales
 
 ```bash
-# Operación diaria (una sola terminal necesaria)
-make gateway-dev       # Levanta LLM Gateway en :8000 (queda bloqueada, es normal)
+# Operación diaria (una sola terminal necesaria — Gateway ya corre en Railway)
 make test              # Health check: Supabase + Qdrant Cloud + Gateway + Embeddings
+make gateway-dev       # Levanta LLM Gateway LOCAL en :8000 (solo para desarrollo)
 
 # Datos (si Qdrant Cloud queda vacío tras migración o reset)
 make setup-cloud       # Re-crea colecciones + re-indexa vacantes en Qdrant Cloud
@@ -147,10 +155,12 @@ make load-data         # Carga vacantes y usuarios mock a Supabase + Qdrant
 make load-jobs         # Solo vacantes
 make load-users        # Solo usuarios
 
-# Demos
+# Demos (requieren Gateway local o apuntar a GATEWAY_URL_PROD)
 make demo-job-match          # Demo interactiva del Job Match Agent
 make demo-activation         # Demo Early Activation Agent (con Claude)
 make demo-activation-offline # Demo sin llamar a Claude (más rápido)
+make demo-employer           # Demo Employer Signal Agent (simula señales + notifica)
+make demo-employer-offline   # Demo Employer Signal sin Claude
 
 # Verificación
 make verify-agent            # Tests Job Match Agent
@@ -161,8 +171,10 @@ make verify-matching         # Tests Matching Notifier (15 tests)
 make verify-profile          # Tests Profile Optimizer (16 tests)
 make verify-employer         # Tests Employer Signal Agent (16 tests)
 
-# URL pública para pruebas (requiere Gateway corriendo)
-ngrok http 8000              # Genera URL pública temporal → /docs para explorar
+# Railway
+railway logs             # Ver logs del Gateway en producción
+railway status           # Estado del servicio en Railway
+railway up               # Re-deployar manualmente (normalmente auto desde GitHub)
 ```
 
 ---
@@ -180,10 +192,18 @@ QDRANT_URL=https://[CLUSTER_ID].us-east-1-1.aws.cloud.qdrant.io
 QDRANT_API_KEY=[JWT_API_KEY]
 QDRANT_COLLECTION=elempleo_jobs
 
-GATEWAY_URL=http://localhost:8000
+# LLM Gateway
+GATEWAY_URL=http://localhost:8000                                      # desarrollo local
+GATEWAY_URL_PROD=https://elempleo-gateway-production.up.railway.app   # producción (Railway)
+
+# Email Sandbox (Mailtrap)
+MAILTRAP_TOKEN=[TOKEN]        # Obtener en mailtrap.io → Sandboxes → API Tokens
+MAILTRAP_INBOX_ID=[INBOX_ID]  # Número en la URL: mailtrap.io/sandboxes/[ID]/...
 ```
 
 **Importante:** La URL de Supabase usa el formato `postgres.[project_ref]` como usuario (session pooler). La URL directa `db.[ref].supabase.co` ya no resuelve DNS en proyectos nuevos.
+
+**Railway env vars:** `ANTHROPIC_API_KEY` y `POSTGRES_URL` están configuradas en Railway para el Gateway en producción. Nunca se commitean al repo.
 
 ---
 
@@ -269,11 +289,14 @@ El routing Haiku/Sonnet es automático en el LLM Gateway según `task_type`.
 
 **Total tests Fase 2: 85/85 ✅**
 
-### Próximos pasos sugeridos
+### Fase 3 — Opciones de continuación
 
-- **Pruebas en real:** correr demos con datos reales (Gateway activo + Supabase)
-- **Railway deploy:** desplegar el sistema completo para acceso sin Mac encendida
-- **Integraciones reales:** conectar canales de email (Mailtrap/SendGrid) y WhatsApp (Meta sandbox)
+| Opción | Descripción |
+|---|---|
+| **Datos reales** | Reemplazar mock_jobs/mock_users con datos reales de elempleo |
+| **WhatsApp** | Conectar Meta Business API Sandbox (WHATSAPP_TOKEN en .env) |
+| **Email HTML** | Mejorar plantilla de email con logo, botón CTA, footer unsubscribe |
+| **Monitoreo** | Dashboard de costos y uso vía `/stats` del Gateway |
 
 ---
 

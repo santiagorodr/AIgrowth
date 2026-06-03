@@ -314,6 +314,21 @@ class WhatsAppChannel(BaseChannel):
             return ChannelResult(success=False, channel=Channel.WHATSAPP, error=str(e))
 
 
+# ── Helpers de configuración ──────────────────────────────────────────────────
+def is_channel_configured(channel: Channel) -> bool:
+    """
+    Retorna True si el canal tiene credenciales disponibles.
+    A diferencia de get_channel(), NO hace fallback a LogChannel —
+    solo verifica si el canal original está listo para usarse.
+    """
+    check_map: dict[Channel, BaseChannel] = {
+        Channel.EMAIL:    EmailChannel(),
+        Channel.WHATSAPP: WhatsAppChannel(),
+    }
+    instance = check_map.get(channel)
+    return instance.is_configured() if instance else False
+
+
 # ── Factory: retorna el canal correcto con fallback automático ────────────────
 def get_channel(channel: Channel) -> BaseChannel:
     """

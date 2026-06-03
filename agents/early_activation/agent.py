@@ -33,7 +33,7 @@ from agents.base import BaseAgent
 from cdp.events import Events
 from event_bus.bus import Channels
 
-from .channels import get_channel
+from .channels import get_channel, is_channel_configured
 from .models import (
     ActivationEvent,
     Channel,
@@ -634,9 +634,13 @@ class EarlyActivationAgent(BaseAgent):
         channel_instance = get_channel(step_conf.channel)
 
         # ── Fallback anticipado si el canal primario no está disponible ─────
+        # Nota: channel_instance puede ser LogChannel aunque el canal pedido
+        # fuera WHATSAPP (get_channel hace el swap internamente). Por eso
+        # se verifica el canal ORIGINAL con is_channel_configured(), no la
+        # instancia devuelta.
         using_fallback = False
         if (
-            not channel_instance.is_configured()
+            not is_channel_configured(step_conf.channel)
             and step_conf.fallback_channel != step_conf.channel
         ):
             self.log.info(

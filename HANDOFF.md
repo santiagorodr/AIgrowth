@@ -1,8 +1,8 @@
 # HANDOFF — Elempleo AI Growth Engine
 > Para: Claude Code  
-> De: sesión integraciones reales — Railway + Mailtrap + demos en vivo
+> De: sesión Fase 3 — Email HTML + Monitoreo + fixes Early Activation
 > Fecha: 2026-06-03
-> Estado: Sistema en producción. Gateway en Railway 24/7. Email real verificado con Mailtrap. 85/85 tests pasando.
+> Estado: Sistema en producción. Email HTML con marca elempleo (navy #053d6a). Monitoreo `/stats` activo en Railway. 5 emails por run (antes 3). 85/85 tests pasando.
 
 ---
 
@@ -197,6 +197,12 @@ from pathlib import Path
 load_dotenv(Path(__file__).parent.parent / ".env")
 ```
 Sin esto, las variables de entorno no se encuentran al correr como módulo.
+
+### Early Activation: load_dotenv en channels.py, no en demo.py
+El `__init__.py` del paquete importa `EarlyActivationAgent` al cargar el módulo, ejecutando `channels.py` antes de que el entrypoint pueda llamar `load_dotenv`. La solución correcta es tener `load_dotenv` al inicio de `channels.py`.
+
+### Early Activation: is_channel_configured() vs instance.is_configured()
+`get_channel(WHATSAPP)` ya devuelve `LogChannel` cuando WhatsApp no está configurado. Usar `is_channel_configured(channel)` (en `channels.py`) para verificar si el canal original está disponible — no `channel_instance.is_configured()` sobre la instancia ya swapeada.
 
 ---
 
@@ -406,9 +412,21 @@ make demo-activation  # Early Activation secuencia 72h
 | `MAILTRAP_INBOX_ID` | — | Canal email — inbox ID de Mailtrap |
 | `GATEWAY_URL_PROD` | `https://elempleo-gateway-production.up.railway.app` | URL pública del Gateway |
 
-### Opciones de continuación (Fase 3)
+### Estado Fase 3
 
-1. **WhatsApp** — conectar Meta Business API Sandbox (`WHATSAPP_TOKEN` en .env)
-2. **Email HTML** — mejorar plantilla con logo, botón CTA y footer unsubscribe
-3. **Datos reales** — reemplazar mock_jobs/mock_users con datos reales del portal
-4. **Monitoreo** — dashboard de costos vía `GET /stats` del Gateway en Railway
+| Opción | Estado |
+|---|---|
+| Email HTML (header navy, CTA, footer) | ✅ Completado |
+| Monitoreo `GET /stats` en Railway | ✅ Completado |
+| WhatsApp — Meta Business API Sandbox | ⏳ Pendiente |
+| Datos reales del portal elempleo | ⏳ Pendiente |
+
+### Fixes aplicados en esta sesión (Early Activation)
+
+| Bug | Causa raíz | Fix |
+|---|---|---|
+| Emails iban a LogChannel | `__init__.py` importa antes que `demo.py` llame `load_dotenv` | `load_dotenv` movido a `channels.py` |
+| Doble LLM call por paso en demo | Demo regeneraba mensaje para display después de enviarlo | `_last_generated_message` cache en agente |
+| cv_tip / first_apply_nudge no llegaban por email | `get_channel(WHATSAPP)` devuelve `LogChannel` (is_configured=True), fallback nunca se activaba | `is_channel_configured()` chequea canal original |
+
+**Resultado:** `make demo-activation` ahora entrega **5 emails** por run (antes 3).

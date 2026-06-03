@@ -289,14 +289,14 @@ El routing Haiku/Sonnet es automático en el LLM Gateway según `task_type`.
 
 **Total tests Fase 2: 85/85 ✅**
 
-### Fase 3 — Opciones de continuación
+### Fase 3 — Parcialmente completada
 
-| Opción | Descripción |
-|---|---|
-| **Datos reales** | Reemplazar mock_jobs/mock_users con datos reales de elempleo |
-| **WhatsApp** | Conectar Meta Business API Sandbox (WHATSAPP_TOKEN en .env) |
-| **Email HTML** | Mejorar plantilla de email con logo, botón CTA, footer unsubscribe |
-| **Monitoreo** | Dashboard de costos y uso vía `/stats` del Gateway |
+| Opción | Estado | Descripción |
+|---|---|---|
+| **Email HTML** | ✅ Completado | Template responsivo con header navy #053d6a, CTA #2985c7, footer unsubscribe. Función `_build_html_email()` en `channels.py`. |
+| **Monitoreo `/stats`** | ✅ Completado | `POSTGRES_URL` configurado en Railway. `GET /stats` y `GET /health` devuelven datos reales de uso y costos. |
+| **WhatsApp** | ⏳ Pendiente | Conectar Meta Business API Sandbox (WHATSAPP_TOKEN en .env) |
+| **Datos reales** | ⏳ Pendiente | Reemplazar mock_jobs/mock_users con datos reales de elempleo |
 
 ---
 
@@ -345,6 +345,15 @@ load_dotenv(Path(__file__).parent.parent / ".env")  # en gateway/main.py
 
 ### UUIDs en mock data
 `mock_jobs.json` usa IDs cortos (`job-001`). `scripts/load_data.py` convierte con `uuid.uuid5(uuid.NAMESPACE_DNS, raw_id)`. Mantener formato `job-XXX` / `user-XXX`.
+
+### Early Activation: load_dotenv debe ir en channels.py, no en demo.py
+`agents/early_activation/__init__.py` importa `EarlyActivationAgent` automáticamente al cargar el paquete. Esto ejecuta `channels.py` antes de que `demo.py` llegue a llamar `load_dotenv()`, dejando `MAILTRAP_TOKEN` vacío. Fix: `load_dotenv()` está al inicio de `channels.py`, antes de los `os.getenv()` de módulo.
+
+### Early Activation: fallback de canal — usar is_channel_configured(), no instance.is_configured()
+`get_channel(Channel.WHATSAPP)` devuelve `LogChannel` cuando WhatsApp no está configurado. `LogChannel.is_configured()` siempre retorna `True`, por lo que el fallback a email nunca se activaba. Fix: `is_channel_configured(channel)` en `channels.py` chequea el canal original sin el swap a LogChannel.
+
+### Early Activation: demo hacía 2 llamadas LLM por paso
+`_run_step_in_memory` genera + envía, y luego `demo.py` llamaba `_generate_message` de nuevo para mostrar el mensaje. Fix: `_run_step_in_memory` cachea el mensaje en `self._last_generated_message`; el demo lo reutiliza directamente.
 
 ---
 

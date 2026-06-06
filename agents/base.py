@@ -28,7 +28,17 @@ from __future__ import annotations
 
 import os
 import time
+from pathlib import Path
 from typing import Any
+
+from dotenv import load_dotenv
+
+# Carga .env antes de cualquier os.getenv() de módulo.
+# base.py es el primer módulo del paquete agents/ en importarse
+# (via agents/__init__.py), por lo que este load_dotenv garantiza
+# que GATEWAY_URL y todas las demás variables estén disponibles
+# para todos los submódulos del ecosistema.
+load_dotenv(Path(__file__).parent.parent / ".env")
 
 import httpx
 import structlog
